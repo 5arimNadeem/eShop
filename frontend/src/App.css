@@ -1,184 +1,541 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+@import "tailwindcss";
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+:root {
+    --background: #ffffff;
+    --foreground: #171717;
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
 }
 
-.hero {
-  position: relative;
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
+}
 
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
+/* Mobile responsive utilities */
+html {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    font-family: "Poppins", sans-serif;
+    background: #f6f6f5;
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    min-height: 100vh;
+    max-width: 100vw;
+}
+
+/* Prevent horizontal scrolling globally */
+* {
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+    max-width: 100%;
+}
+
+/* Root container overflow control */
+#__next,
+[data-nextjs-scroll-focus-boundary] {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+}
+
+/* Mobile-first responsive containers */
+.mobile-container {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+    .mobile-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .mobile-container {
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+}
+
+* {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    font-family: "Poppins", sans-serif;
+    background: #f6f6f5;
+    scroll-behavior: smooth;
+}
+
+.section {
+    width: 91.666667%;
     margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
 }
 
-#center {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+.heading {
+    font-size: 27px;
+    text-align: start;
+    font-weight: 600;
+    padding-bottom: 20px;
 }
 
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
+@media (max-width: 800px) {
+    .heading {
+        text-align: center;
     }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+input,
+select {
+    outline: none;
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
+.batch_heart {
+    background: tomato;
+    width: 15px;
+    height: 15px;
     display: flex;
-    padding: 6px 12px;
     align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
     justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+    border-radius: 100%;
+    position: absolute;
+    right: -24%;
+    top: -9%;
+    cursor: pointer;
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
-.ticks {
-  position: relative;
-  width: 100%;
+/* Firefox */
+input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
 
-  &::before,
-  &::after {
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.product-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Custom Scrollbar for WebKit browsers (Chrome, Safari, Edge) */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 12px;
+    /* Width of the scrollbar */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    /* Background of the scrollbar track */
+    border-radius: 6px;
+    /* Rounded corners for the track */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    /* Color of the scrollbar thumb */
+    border-radius: 6px;
+    /* Rounded corners for the thumb */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+    /* Color of the scrollbar thumb when hovered */
+}
+
+/* Custom Scrollbar for Firefox */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    /* Thin scrollbar */
+}
+
+@media (max-width: 400px) {
+    .grid-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 500px) {
+    .product-grid-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ensure the DataGrid is responsive */
+.data-grid-container {
+    width: 100%;
+    overflow-x: auto;
+    min-height: 300px;
+}
+
+/* Adjust padding and margins for small screens */
+@media (max-width: 768px) {
+    .data-grid-container {
+        margin: 0;
+        padding: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* DataGrid mobile responsive overrides */
+.MuiDataGrid-root {
+    border: none !important;
+    overflow: hidden !important;
+    min-width: 100% !important;
+}
+
+.MuiDataGrid-main {
+    overflow: hidden !important;
+}
+
+.MuiDataGrid-virtualScroller {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+/* Mobile DataGrid optimizations */
+@media (max-width: 768px) {
+    .MuiDataGrid-root {
+        min-width: 600px !important;
+    }
+
+    .MuiDataGrid-columnHeader {
+        padding: 8px 4px !important;
+        font-size: 12px !important;
+    }
+
+    .MuiDataGrid-cell {
+        padding: 8px 4px !important;
+        font-size: 12px !important;
+    }
+
+    .MuiDataGrid-footerContainer {
+        padding: 8px !important;
+    }
+}
+
+/* DataGrid responsive overrides for refund pages */
+.data-grid-container {
+    width: 100%;
+    overflow: hidden;
+}
+
+.data-grid-container .MuiDataGrid-root {
+    min-width: 100%;
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    .data-grid-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .data-grid-container .MuiDataGrid-virtualScrollerContent {
+        min-width: max-content;
+    }
+
+    .data-grid-container .MuiDataGrid-cell {
+        white-space: nowrap;
+    }
+
+    .data-grid-container .MuiDataGrid-columnHeader {
+        white-space: nowrap;
+    }
+}
+
+/* Refund page specific responsive utilities */
+.refund-page-container {
+    padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .refund-page-container {
+        padding: 1rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .refund-page-container {
+        padding: 1.5rem;
+    }
+}
+
+/* Responsive status badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .status-badge {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Ensure tables don't overflow on small screens */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Loading spinner styles */
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Button loading states */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.btn-loading::before {
     content: '';
     position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
-
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
-  }
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
+
+/* Responsive sidebar */
+.sidebar-mobile {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.sidebar-mobile.open {
+    transform: translateX(0);
+}
+
+/* Mobile menu overlay */
+.mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+}
+
+/* Video responsive styles for Hero section */
+.hero-video-container {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    height: 80vh;
+    overflow: hidden;
+    background-color: #000;
+    margin: 0;
+    padding: 0;
+}
+
+.hero-video-container video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Mobile video optimizations */
+@media (max-width: 768px) {
+    .hero-video-container {
+        height: 60vh;
+        /* Mobile-first approach with conservative height */
+        width: 100vw;
+        max-width: 100vw;
+        margin-left: calc(-50vw + 50%);
+        margin-right: calc(-50vw + 50%);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .hero-video-container video {
+        object-fit: cover;
+        object-position: center;
+        /* Ensure no letterboxing on mobile */
+        min-width: 100%;
+        min-height: 100%;
+        max-width: 100%;
+        width: 100%;
+        height: 100%;
+        transform: translateZ(0);
+        /* Enable hardware acceleration */
+    }
+
+    /* Prevent any parent container padding/margin from affecting video */
+    .hero-video-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+    }
+}
+
+/* Portrait mode optimization */
+@media (max-width: 768px) and (orientation: portrait) {
+    .hero-video-container {
+        height: 60vh;
+        width: 100vw;
+        max-width: 100vw;
+    }
+
+    .hero-video-container video {
+        object-fit: cover;
+        object-position: center center;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Landscape mode optimization for mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .hero-video-container {
+        height: 100vh;
+        width: 100vw;
+        max-width: 100vw;
+    }
+
+    .hero-video-container video {
+        object-fit: cover;
+        object-position: center;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Tablet responsive */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .hero-video-container {
+        height: 75vh;
+    }
+}
+
+/* Large screen optimization */
+@media (min-width: 1025px) {
+    .hero-video-container {
+        height: 80vh;
+    }
+}
+
+/* Coupon Data Grid Responsive Styles */
+.coupon-data-grid {
+    width: 100%;
+}
+
+.coupon-data-grid .MuiDataGrid-root {
+    border: none;
+    font-family: inherit;
+}
+
+.coupon-data-grid .MuiDataGrid-cell {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.coupon-data-grid .MuiDataGrid-columnHeaders {
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.coupon-table-container {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+@media (max-width: 768px) {
+    .coupon-table-container {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+
+    .coupon-data-grid .MuiDataGrid-cell {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+
+    .coupon-data-grid .MuiDataGrid-columnHeaders {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+}
+
+/* End Coupon Data Grid Styles */
