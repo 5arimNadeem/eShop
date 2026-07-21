@@ -1,9 +1,9 @@
 const express = require("express");
-// const ErrorHandler = require("./middleware/error");
+const ErrorHandler = require("./middleware/error.js");
 const app = express();
-// const cookieParser = require("cookie-parser");
-// const bodyParser = require("body-parser");
-// const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+const cors = require("cors");
 
 // app.use(
 //   cors({
@@ -12,18 +12,19 @@ const app = express();
 //   }),
 // );
 
-// app.use(express.json());
-// app.use(cookieParser());
-// app.use("/test", (req, res) => {
-//   res.send("Hello world!");
-// });
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors());
+app.use("/test", (req, res) => {
+  res.send("Hello world!");
+});
 
-// app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 
 // config
 if (process.env.NODE_ENV !== "PRODUCTION") {
   require("dotenv").config({
-    path: "config/.env",
+    path: "backend/config/.env",
   });
 }
 
@@ -51,6 +52,6 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 // app.use("/api/v2/withdraw", withdraw);
 
 // it's for ErrorHandling
-// app.use(ErrorHandler);
+app.use(ErrorHandler);
 
 module.exports = app;

@@ -1,11 +1,11 @@
 import { React, useState } from "react";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import styles from "../../styles/styles";
+import styles from "../../styles/styles.js";
 import { Link } from "react-router-dom";
 import { RxAvatar } from "react-icons/rx";
-// import axios from "axios";
-// import { server } from "../../server";
-// import { toast } from "react-toastify";
+import axios from "axios";
+// import { server } from "../../server.js";
+import { toast } from "react-toastify";
 
 const Singup = () => {
   const [email, setEmail] = useState("");

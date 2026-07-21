@@ -1,5 +1,5 @@
 const app = require("./app");
-// const connectDatabase = require("./db/Database");
+const connectDatabase = require("./db/mongo.js");
 // const cloudinary = require("cloudinary");
 
 // Handling uncaught Exception
@@ -9,14 +9,14 @@ const app = require("./app");
 // });
 
 // config
-// if (process.env.NODE_ENV !== "PRODUCTION") {
-//   require("dotenv").config({
-//     path: "config/.env",
-//   });
-// }
+if (process.env.NODE_ENV !== "PRODUCTION") {
+  require("dotenv").config({
+    path: "config/.env",
+  });
+}
 
 // connect db
-// connectDatabase();
+connectDatabase();
 
 // cloudinary.config({
 //   cloud_name: process.env.CLOUDINARY_NAME,
