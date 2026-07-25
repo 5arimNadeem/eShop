@@ -2,24 +2,28 @@
   "name": "eshop",
   "version": "1.0.0",
   "description": "",
+  "homepage": "https://github.com/5arimNadeem/E-Shop-MultiVendor#readme",
+  "bugs": {
+    "url": "https://github.com/5arimNadeem/E-Shop-MultiVendor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/5arimNadeem/E-Shop-MultiVendor.git"
+  },
   "license": "ISC",
-  "author": "",
+  "author": "sarim",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "backend/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon backend/server.js",
-    "start": "node backend/server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.6.2",
-    "nodemailer": "^8.0.7",
+    "mongoose": "^9.8.0",
+    "nodemailer": "^9.0.3",
     "nodemon": "^3.1.14"
   }
 }
