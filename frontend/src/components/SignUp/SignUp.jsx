@@ -27,118 +27,70 @@ const SignUp = () => {
         }
     };
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    <h2 className="mt-2 mb-5 text-center text-3xl font-extrabold text-gray-900">
-                        Register as a new user
-                    </h2>
-                    <form className="space-y-6">
-                        {/* Name input */}
-                        <div>
-                            <label
-                                htmlFor="name"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Full Name
-                            </label>
-                            <div className="mt-1">
-                                <input
-                                    type="text"
-                                    name="name"
-                                    autoComplete="name"
-                                    required
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Email input */}
-                        <div>
-                            <label
-                                htmlFor="email"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Email address
-                            </label>
-                            <div className="mt-1">
-                                <input
-                                    type="email"
-                                    name="email"
-                                    autoComplete="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Password input with visibility toggle */}
-                        <div>
-                            <label
-                                htmlFor="password"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Password
-                            </label>
-                            <div className="mt-1 relative">
-                                <input
-                                    type={visible ? "text" : "password"}
-                                    name="password"
-                                    autoComplete="current-password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                />
-                                {visible ? (
-                                    <AiOutlineEye
-                                        className="absolute right-2 top-2 cursor-pointer"
-                                        size={25}
-                                        onClick={() => setVisible(false)}
+        <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+            <div className="border sm:mx-auto sm:w-full sm:max-w-md rounded-xl">
+                {/* <div className=""> */}
+                <h2 className="mt-4 text-center text-3xl font-extrabold text-gray-900">
+                    Register a new user
+                </h2>
+                {/* </div> */}
+                <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+                    <div className="py-3 px-4 shodow sm:rounded-lg sm:px-10">
+                        <form className="space-y-6">
+                            <div>
+                                <label
+                                    htmlFor="name"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Full Name
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        type="text"
+                                        name="text"
+                                        autoComplete="name"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     />
-                                ) : (
-                                    <AiOutlineEyeInvisible
-                                        className="absolute right-2 top-2 cursor-pointer"
-                                        size={25}
-                                        onClick={() => setVisible(true)}
-                                    />
-                                )}
+                                </div>
                             </div>
-                        </div>
+                            <div>
+                                <label
+                                    htmlFor="password"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Password
+                                </label>
+                                <div className="mt-1 relative">
+                                    <input
+                                        type={visible ? "text" : "password"}
+                                        name="password"
+                                        autoComplete="current-password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
 
-                        {/* Avatar file input */}
-                        <div>
-                            <label
-                                htmlFor="avatar"
-                                className="block text-sm font-medium text-gray-700"
-                            >
-                                Avatar
-                            </label>
-                            <div className="mt-2 flex items-center">
-                                {/* Avatar preview */}
-                                <span className="inline-block h-8 w-8 rounded-full overflow-hidden">
-                                    {avatarPreview ? (
-                                        <img
-                                            src={avatarPreview}
-                                            alt="avatar"
-                                            className="h-full w-full object-cover rounded-full"
+                                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    />
+                                    {visible ? (
+                                        <AiOutlineEye
+                                            className="absolute right-2 top-2 cursor-pointer"
+                                            size={25}
+                                            onClick={() => setVisible(false)}
                                         />
                                     ) : (
-                                        <RxAvatar className="h-8 w-8" />
+                                        <AiOutlineEyeInvisible
+                                            className="absolute right-2 top-2 cursor-pointer"
+                                            size={25}
+                                            onClick={() => setVisible(true)}
+                                        />
                                     )}
-                                </span>
-                                {/* File input for avatar */}
-                                <label
-                                    htmlFor="file-input"
-                                    className="ml-5 flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
-                                >
-                                    <span>Upload a file</span>
+                                </div>
+                            </div>
+                            <div className={`${styles.noramlFlex} justify-between`}>
+                                <div className={`${styles.noramlFlex}`}>
                                     <input
                                         type="file"
                                         name="avatar"
