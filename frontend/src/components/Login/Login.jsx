@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import styles from "../../styles/styles";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 
 const Login = () => {
@@ -92,13 +92,12 @@ const Login = () => {
                             <div>
                                 <button
                                     type="submit"
-                                    disabled={loading}
-                                    className={`group relative w-full h-[40px] flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${loading
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 hover:bg-blue-700'
-                                        }`}
+                                    // disabled={loading}
+                                    className="group relative w-full h-[40px] flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                                        // 'bg-gray-400 cursor-not-allowed'
+                                    
                                 >
-                                    {loading ? (
+                                    {/* {loading ? (
                                         <div className="flex items-center">
                                             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -106,9 +105,9 @@ const Login = () => {
                                             </svg>
                                             Signing in...
                                         </div>
-                                    ) : (
-                                        'Submit'
-                                    )}
+                                    ) : ( */}
+                                        Submit
+                                    {/* )} */}
                                 </button>
                             </div>
                             <div className={`${styles.noramlFlex} text-[14px] w-full`}>
