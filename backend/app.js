@@ -6,14 +6,17 @@ const app = express();
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser')
 
+// middlewares 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors())
+app.use(cors({
+    origin: "http://localhost:3000",
+    credentials: true
+}))
 app.use("/", express.static("uploads"));
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 
-// middlewares 
-// console.log(app.use(express.json()))
+
 
 //config
 if (process.env.NODE_ENV !== "PRODUCTION") {
@@ -21,7 +24,7 @@ if (process.env.NODE_ENV !== "PRODUCTION") {
 }
 
 // Importing Routes
-const user = require('./controller/user');
+const user = require('./controller/user.js');
 
 // Using Routes
 app.use('/api/v2/user', user);

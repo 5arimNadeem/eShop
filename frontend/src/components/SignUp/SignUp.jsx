@@ -1,8 +1,12 @@
 import React, { useState } from 'react'
+import axios from "axios";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { RxAvatar } from "react-icons/rx";
 import styles from "../../styles/styles";
 import { Link } from "react-router-dom";
-
+import { server } from '../../server';
+import { toast } from 'react-toastify';
+console.log(axios)
 
 const SignUp = () => {
     const [email, setEmail] = useState("");
@@ -11,13 +15,36 @@ const SignUp = () => {
     const [visible, setVisible] = useState(false);
     // const [loading, setLoading] = useState(false);
     const [avatar, setAvatar] = useState(null)
-    const handleSubmit = () => {
-        console.log("ffff")
-    }
+
     const handleFileInputChange = (e) => {
-        const file = event.target.file[0]
+        const file = e.target.files[0]
 
         setAvatar(file)
+    }
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        const config = { headers: { "Content-Type": "multipart/form-data" } };
+
+
+        const newForm = new FormData();
+
+        newForm.append("name", name);
+        newForm.append("email", email);
+        newForm.append("password", password);
+        newForm.append("file", avatar);
+
+
+        await axios.post(`${server}/user/create-user`, newForm, config).then((res) => {
+            toast.success("user created successfully");
+            setName("");
+            setEmail("");
+            setPassword("");
+            setAvatar(null);
+        }).catch((error) => {
+            const errorMessage =
+                error.response?.data?.message || "Something went wrong!";
+            toast.error(errorMessage);
+        })
     }
     return (
         <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -29,7 +56,7 @@ const SignUp = () => {
                 {/* </div> */}
                 <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                     <div className="py-3 px-4 shodow sm:rounded-lg sm:px-10">
-                        <form className="space-y-6">
+                        <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
                                 <label
                                     htmlFor="name"
@@ -102,22 +129,41 @@ const SignUp = () => {
                                     )}
                                 </div>
                             </div>
-                            <div className={`${styles.noramlFlex} justify-between`}>
-                                <div className={`${styles.noramlFlex}`}>
-                                    <input
-                                        type="checkbox"
-                                        name="remember-me"
-                                        id="remember-me"
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                    />
+
+                            {/* Avatar file input */}
+                            <div>
+                                <label
+                                    htmlFor="avatar"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Avatar
+                                </label>
+                                <div className="mt-2 flex items-center">
+                                    {/* Avatar preview */}
+                                    <span className="inline-block h-8 w-8 rounded-full overflow-hidden">
+                                        {avatar ? (
+                                            <img src={URL.createObjectURL(avatar)} alt="avatar" className='h-full w-full object-cover rounded-full' />
+                                        ) : (
+
+                                            <RxAvatar className="h-8 w-8" />
+                                        )}
+                                    </span>
+                                    {/* File input for avatar */}
                                     <label
-                                        htmlFor="remember-me"
-                                        className="ml-2 block text-sm text-gray-900"
+                                        htmlFor="file-input"
+                                        className="ml-5 flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
                                     >
-                                        Remember me
+                                        <span>Upload a file</span>
+                                        <input
+                                            type="file"
+                                            name="avatar"
+                                            id="file-input"
+                                            accept=".jpg,.jpeg,.png"
+                                            onChange={handleFileInputChange}
+                                            className="sr-only"
+                                        />
                                     </label>
                                 </div>
-
                             </div>
 
                             <div>
@@ -155,7 +201,7 @@ const SignUp = () => {
                                 </button>
                             </div>
                             <div className={`${styles.noramlFlex} text-[14px] w-full`}>
-                                <h4>Not have any account?</h4>
+                                <h4>Already have any account?</h4>
                                 <Link to="/login" className="text-blue-600 font-semibold pl-2">
                                     Sign in
                                 </Link>

@@ -57,16 +57,16 @@ userSchema.pre("save", async function (next) {
 });
 
 // // Generate JWT token for authentication
-// userSchema.methods.getJwtToken = function () {
-//     return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-//         expiresIn: '5d',
-//     });
-// };
+userSchema.methods.getJwtToken = function () {
+    return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+        expiresIn: '5d',
+    });
+};
 
 // // Compare entered password with stored hashed password
-// userSchema.methods.comparePassword = async function (enteredPassword) {
-//     return await bcrypt.compare(enteredPassword, this.password);
-// };
+userSchema.methods.comparePassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
 
 module.exports = mongoose.model("User", userSchema);
 

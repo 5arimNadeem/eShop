@@ -1,14 +1,38 @@
 import React, { useState } from 'react'
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import styles from "../../styles/styles";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from 'axios';
+import { server } from '../../server';
+import { toast } from 'react-toastify';
 
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [visible, setVisible] = useState(false);
-    const [loading, setLoading] = useState(false);
+    // const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        // setLoading(true);
+
+        await axios.post(`${server}/user/login-user`, {
+            email,
+            password,
+        }, { withCredentials: true }).then((res) => {
+            toast.success("Login succesfull");
+            navigate("/");
+            window.location.reload();
+        }).catch((err) => {
+            // toast.error(err.response.data.message);
+            toast.error("there was the error");
+
+        })
+
+    }
     return (
         <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="border sm:mx-auto sm:w-full sm:max-w-md rounded-xl">
@@ -19,7 +43,7 @@ const Login = () => {
                 {/* </div> */}
                 <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                     <div className="py-3 px-4 shodow sm:rounded-lg sm:px-10">
-                        <form className="space-y-6">
+                        <form className="space-y-6" onSubmit={handleSubmit}>
                             <div>
                                 <label
                                     htmlFor="email"
@@ -94,8 +118,8 @@ const Login = () => {
                                     type="submit"
                                     // disabled={loading}
                                     className="group relative w-full h-[40px] flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                                        // 'bg-gray-400 cursor-not-allowed'
-                                    
+                                // 'bg-gray-400 cursor-not-allowed'
+
                                 >
                                     {/* {loading ? (
                                         <div className="flex items-center">
@@ -106,7 +130,7 @@ const Login = () => {
                                             Signing in...
                                         </div>
                                     ) : ( */}
-                                        Submit
+                                    Submit
                                     {/* )} */}
                                 </button>
                             </div>
