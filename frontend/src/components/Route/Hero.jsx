@@ -120,6 +120,7 @@ const Hero = ({data, image}) => {
             </div>
         </div>
     );
+    // 6:58:11
 };
 
 export default Hero;
