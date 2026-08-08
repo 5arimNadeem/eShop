@@ -209,7 +209,7 @@ Verified 2026-07-31.
 
 **Start here (free, all about reproduction)**
 - [How to create a Minimal, Reproducible Example](https://stackoverflow.com/help/minimal-reproducible-example) — Stack Overflow. The densest thing written on this. ([friendlier version](https://overflow.tips/write-good-question/minimal-complete-reproducible-example))
-- [How to Report Bugs Effectively](https://www.chiark.greenend.org.uk/~sgtatham/bugs.html) — Simon Tatham. *"The aim of a bug report is to enable the programmer to see the program failing in front of them."* Also: separate facts from speculation.
+- [How to Report Bugs Effectively](https://www.chiark.blueend.org.uk/~sgtatham/bugs.html) — Simon Tatham. *"The aim of a bug report is to enable the programmer to see the program failing in front of them."* Also: separate facts from speculation.
 - [The Pocket Guide to Debugging](https://jvns.ca/blog/2022/12/21/new-zine--the-pocket-guide-to-debugging/) — Julia Evans (paid). Free: [debugging zine PDF](https://jvns.ca/debugging-zine.pdf), [all zines](https://jvns.ca/zines), [blog](https://jvns.ca/).
 
 **Books**

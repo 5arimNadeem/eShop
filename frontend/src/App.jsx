@@ -10,7 +10,7 @@ const App = () => {
     axios.get(`${server}/user/get-user`, { withCredentials: true }).then((res) => {
       toast.success(res.data.message)
     }).catch((err) => {
-      toast.error(err.response.data.message)
+      toast.error(err?.response?.data?.message)
     })
   }, []);
   return (
@@ -21,6 +21,7 @@ const App = () => {
           <Route path='/login' element={<LoginPage />} />
           <Route path='/sign-up' element={<SignupPage />} />
           <Route path='/activation/:activationToken' element={<ActivationPage />} />
+          {/* <Route path='/activation/:activationToken' element={<ActivationPage />} /> */}
         </Routes>
         <ToastContainer position="top-center" autoClose={3000} />
       </BrowserRouter>

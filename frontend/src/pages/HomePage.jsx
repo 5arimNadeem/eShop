@@ -1,24 +1,25 @@
 import React from 'react'
 import Header from '../components/Layout/Header.jsx'
 import Hero from '../components/Route/Hero.jsx'
-// import Categories from '../components/Route/Catagories/Catagories'
-// import BestDeals from '../components/Route/BestDeals/BestDeals'
-// import FeaturedProduct from '../components/Route/FeaturedProduct/FeaturedProduct'
-// import Events from '../components/Events/Events'
-// import Sponsored from '../components/Route/Sponsered'
-// import Footer from '../components/Layout/Footer'
+import Categories from '../components/Route/Catagories/Catagories.jsx'
+import BestDeals from '../components/Route/BestDeals/BestDeals.jsx'
+import FeaturedProduct from '../components/Route/FeaturedProduct/FeaturedProduct.jsx'
+import Events from '../components/Events/Events.jsx'
+import Sponsored from '../components/Route/Sponsered.jsx'
+import Footer from '../components/Layout/Footer.jsx'
 const HomePage = () => {
     return (
         <div>
-            <Header />
+            <Header activeHeading={1} />
             <Hero />
-            {/*
             <Categories />
             <BestDeals />
             <FeaturedProduct />
             <Events />
+            <br />
+            <br />
             <Sponsored />
-            <Footer /> */}
+            <Footer />
         </div>
     )
 }

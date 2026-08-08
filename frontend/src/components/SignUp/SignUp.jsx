@@ -6,7 +6,6 @@ import styles from "../../styles/styles";
 import { Link } from "react-router-dom";
 import { server } from '../../server';
 import { toast } from 'react-toastify';
-console.log(axios)
 
 const SignUp = () => {
     const [email, setEmail] = useState("");

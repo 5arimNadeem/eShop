@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { navItems } from "../../static/data"
-import { getImageUrl } from "../../utils/imageUtils";
+// import { getImageUrl } from "../../utils/imageUtils";
 
 // Import styles
 const styles = {
     normalFlex: "flex items-center",
 }
 
-const Navbar = ({ active }) => {
+const Navbar = ({ active, solid }) => {
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 0)
 
     useEffect(() => {
@@ -31,8 +31,14 @@ const Navbar = ({ active }) => {
                     <div className="flex" key={index}>
                         <Link
                             to={i.url}
-                            className={`${active === index + 1 ? "text-[#77dd17]" : windowWidth >= 800 ? "text-[#fff]" : "text-black"
-                                } pb-[30px] ${windowWidth >= 800 ? "pb-0" : ""} font-[500] px-6 cursor-pointer`}
+                            className={`${active === index + 1
+                                    ? "text-[#179edd]"
+                                    : windowWidth >= 800
+                                        ? solid
+                                            ? "text-gray-700"
+                                            : "text-[#fff]"
+                                        : "text-black"
+                                } pb-[30px] ${windowWidth >= 800 ? "pb-0" : ""} font-[500] px-6 cursor-pointer transition-colors`}
                         >
                             {i.title}
                         </Link>
