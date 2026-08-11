@@ -12,7 +12,8 @@ import { BiMenuAltLeft } from "react-icons/bi";
 import { CgProfile } from "react-icons/cg";
 import DropDown from "./DropDown";
 import Navbar from "./Navbar";
-// import { useSelector } from "react-redux";
+import { useSelector } from "react-redux";
+import { backendUrl } from "../../server";
 // import Cart from "../cart/Cart";
 // import Wishlist from "../Wishlist/Wishlist";
 // import { RxCross1 } from "react-icons/rx";
@@ -20,14 +21,13 @@ import Navbar from "./Navbar";
 // import { getImageUrl } from "../../utils/imageUtils";
 
 const Header = ({ activeHeading }) => {
-    // const { isAuthenticated, user } = useSelector((state) => state.user);
+    const { isAuthenticated, user } = useSelector((state) => state.user);
     // const { isSeller } = useSelector((state) => state.seller);
     // const { wishlist } = useSelector((state) => state.wishlist);
     // const { cart } = useSelector((state) => state.cart);
     // const { allProducts } = useSelector((state) => state.products);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchData, setSearchData] = useState(null);
-    const [active, setActive] = useState(false);
     const [dropDown, setDropDown] = useState(false);
     // const [openCart, setOpenCart] = useState(false);
     // const [openWishlist, setOpenWishlist] = useState(false);
@@ -44,29 +44,15 @@ const Header = ({ activeHeading }) => {
         setSearchData(filteredProducts);
     };
 
-    window.addEventListener("scroll", () => {
-        if (window.scrollY > 70) {
-            setActive(true);
-        } else {
-            setActive(false);
-        }
-    });
-
     return (
-        <div
-            className={`fixed top-0 left-0 w-full z-30 transition-colors duration-300 ${active ? "bg-white shadow-md" : "bg-transparent"
-                }`}
-        >
+        <div className="fixed top-0 left-0 w-full z-30 bg-white shadow-md">
             <div className={`${styles.section}`}>
                 <div className="hidden 800px:h-[60px] 800px:my-[20px] 800px:flex items-center justify-between">
                     <div>
                         <Link to="/">
                             <div className="flex items-center">
                                 <h1
-                                    className={`text-4xl font-bold transition-colors ${active
-                                            ? "text-blue-600 hover:text-blue-700"
-                                            : "text-white hover:text-blue-100"
-                                        }`}
+                                    className="text-4xl font-bold text-blue-600 hover:text-blue-700"
                                 >
                                     EShop
                                 </h1>
@@ -149,7 +135,7 @@ const Header = ({ activeHeading }) => {
                     </div>
                     {/* navitems */}
                     <div className={`${styles.noramlFlex}`}>
-                        <Navbar active={activeHeading} solid={active} />
+                        <Navbar active={activeHeading} solid />
                     </div>
 
                     {/* wishlist */}
@@ -157,11 +143,10 @@ const Header = ({ activeHeading }) => {
                     <div className="flex">
                         <div className={`${styles.noramlFlex}`}>
                             <div
-                                className={`relative cursor-pointer mr-[15px] p-2 rounded-lg transition-colors ${active ? "hover:bg-blue-100" : "hover:bg-white/20"
-                                    }`}
+                                className="relative cursor-pointer mr-[15px] p-2 rounded-lg hover:bg-blue-100"
                             // onClick={() => setOpenWishlist(true)}
                             >
-                                <AiOutlineHeart size={28} color={active ? "#2563eb" : "#ffffff"} />
+                                <AiOutlineHeart size={28} color="#2563eb" />
                                 <span className="absolute -right-1 -top-1 rounded-full bg-blue-400 w-5 h-5 flex items-center justify-center text-white font-bold text-[11px] shadow-md">
                                     {/* {wishlist && wishlist.length} */}
                                 </span>
@@ -170,11 +155,10 @@ const Header = ({ activeHeading }) => {
 
                         <div className={`${styles.noramlFlex}`}>
                             <div
-                                className={`relative cursor-pointer mr-[15px] p-2 rounded-lg transition-colors ${active ? "hover:bg-blue-100" : "hover:bg-white/20"
-                                    }`}
+                                className="relative cursor-pointer mr-[15px] p-2 rounded-lg hover:bg-blue-100"
                             // onClick={() => setOpenWishlist(true)}
                             >
-                                <AiOutlineShoppingCart size={28} color={active ? "#2563eb" : "#ffffff"} />
+                                <AiOutlineShoppingCart size={28} color="#2563eb" />
                                 <span className="absolute -right-1 -top-1 rounded-full bg-blue-400 w-5 h-5 flex items-center justify-center text-white font-bold text-[11px] shadow-md">
                                     {/* {wishlist && wishlist.length} */}
                                 </span>
@@ -182,14 +166,35 @@ const Header = ({ activeHeading }) => {
                         </div>
 
                         <div className={`${styles.noramlFlex}`}>
+
                             <div
-                                className={`relative cursor-pointer mr-[15px] p-2 rounded-lg transition-colors ${active ? "hover:bg-blue-100" : "hover:bg-white/20"
-                                    }`}
-                            // onClick={() => setOpenWishlist(true)}
-                            >
-                                <Link to="/login">
-                                    <CgProfile size={28} color={active ? "#2563eb" : "#ffffff"} />
-                                </Link>
+                                className="relative cursor-pointer mr-[15px] p-2 rounded-lg hover:bg-blue-100">
+                                {isAuthenticated ? (
+                                    // <div>
+                                    <Link to="/profile">
+                                        <img
+                                            src={`${backendUrl}${user.avatar}`}
+                                            alt=""
+                                            className="w-[60px] h-[60px] rounded-full border-[3px] border-green-500"
+                                        />
+                                    </Link>
+                                    // </div>
+                                ) : (
+                                    <>
+                                        <Link
+                                            to="/login"
+                                            className="text-[18px] pr-[10px] text-green-600 font-semibold"
+                                        >
+                                            Login /
+                                        </Link>
+                                        <Link
+                                            to="/signup"
+                                            className="text-[18px] text-green-600 font-semibold"
+                                        >
+                                            Sign up
+                                        </Link>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

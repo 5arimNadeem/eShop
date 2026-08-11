@@ -5,10 +5,10 @@ import CountDown from "./Countdown.jsx";
 // const FALLBACK_IMAGE =
 //     "https://placehold.co/400x400/f3f4f6/9ca3af?text=No+Image";
 
-const EventCard = () => {
+const EventCard = ({active}) => {
     // const imageUrl = data?.image_Url?.[0]?.url || data?.images?.[0]?.url
     return (
-        <div className='w-full 800px:flex block bg-white rounded-lg p-2 lg:800'>
+        <div className={`w-full 800px:flex block bg-white rounded-lg ${active ? "unset" : "mb-12"} p-2 lg:800`}>
             <div className="w-full lg-w[50%] m-auto">
                 <img src="https://m.media-amazon.com/images/I/31Vle5fVdaL.jpg"
                     alt="iphone"

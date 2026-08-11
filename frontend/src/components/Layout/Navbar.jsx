@@ -35,7 +35,7 @@ const Navbar = ({ active, solid }) => {
                                     ? "text-[#179edd]"
                                     : windowWidth >= 800
                                         ? solid
-                                            ? "text-gray-700"
+                                            ? "text-gray-400"
                                             : "text-[#fff]"
                                         : "text-black"
                                 } pb-[30px] ${windowWidth >= 800 ? "pb-0" : ""} font-[500] px-6 cursor-pointer transition-colors`}
