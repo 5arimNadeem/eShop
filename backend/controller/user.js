@@ -127,6 +127,7 @@ router.post(
             }
 
             const user = await User.findOne({ email }).select("+password");
+            // debugger;
 
             if (!user) {
                 return next(new ErrorHandler("User not found", 401));

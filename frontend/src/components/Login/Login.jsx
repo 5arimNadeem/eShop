@@ -14,24 +14,20 @@ const Login = () => {
     // const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         // setLoading(true);
-
         await axios.post(`${server}/user/login-user`, {
             email,
             password,
         }, { withCredentials: true }).then((res) => {
+            // console.log(email, "--", password)
             toast.success("Login succesfull");
             navigate("/");
-            window.location.reload();
+            window.location.reload(true);
         }).catch((err) => {
-            // toast.error(err.response.data.message);
-            toast.error("there was the error");
-
+            toast.error(err?.response?.data?.message || "there was the error");
         })
-
     }
     return (
         <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">

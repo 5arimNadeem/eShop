@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, removeFromCart } from "../../redux/actions/cart";
 import { toast } from "react-toastify";
-import { backendUrl } from "../../server";
+// import { backendUrl } from "../../server";
 import { getImageUrl } from "../../utils/imageUtils";
 
 const Cart = ({ setOpenCart }) => {
