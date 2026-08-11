@@ -6,8 +6,8 @@ import { server } from "../../server";
 export const loadUser = () => async (dispatch) => {
     try {
         dispatch({ type: "LoadUserRequest" });
-
         const { data } = await axios.get(`${server}/user/get-user`, {
+
             withCredentials: true,
         });
 

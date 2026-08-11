@@ -1,0 +1,11 @@
+{
+  // Node + Chrome debugging is built into VSCode (js-debug) — nothing to
+  // install for that. These are the extensions this project actually leans on.
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "usernamehw.errorlens",
+    "bradlc.vscode-tailwindcss",
+    "mongodb.mongodb-vscode",
+    "rangav.vscode-thunder-client"
+  ]
+}

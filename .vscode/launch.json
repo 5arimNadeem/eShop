@@ -1,0 +1,118 @@
+{
+  // js-debug is built into VSCode — no extension needed for these.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Everyday backend config. nodemon restarts on save AND the debugger
+      // re-attaches, so breakpoints survive a restart.
+      // cwd MUST be backend/ — server.js loads 'config/.env' relative to cwd.
+      "name": "API: nodemon (auto-restart)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/backend/node_modules/.bin/nodemon",
+      "program": "${workspaceFolder}/backend/server.js",
+      "cwd": "${workspaceFolder}/backend",
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/backend/node_modules/**"
+      ]
+    },
+    {
+      // Use this when a bug is timing-sensitive or nodemon's restarts are
+      // getting in the way. Plain node, one process, no file watching.
+      "name": "API: plain node (no watch)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/server.js",
+      "cwd": "${workspaceFolder}/backend",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/backend/node_modules/**"
+      ]
+    },
+    {
+      // Stops on the very first line of server.js — for "it crashes before
+      // my breakpoint is even registered" bugs (config/env load order).
+      "name": "API: break on first line",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/server.js",
+      "cwd": "${workspaceFolder}/backend",
+      "stopOnEntry": true,
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Attach to a server you already started yourself with:
+      //   cd backend && node --inspect server.js
+      "name": "API: attach to :9229",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}/backend",
+      "remoteRoot": "${workspaceFolder}/backend",
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/backend/node_modules/**"
+      ]
+    },
+    {
+      // Starts CRA in a terminal, waits for "Local: http://localhost:3000",
+      // then launches Chrome already attached. One click = full frontend debug.
+      // BROWSER=none stops CRA opening a second, undebugged tab.
+      "name": "Web: start CRA + Chrome",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm start",
+      "cwd": "${workspaceFolder}/frontend",
+      "env": { "BROWSER": "none" },
+      "serverReadyAction": {
+        "action": "debugWithChrome",
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "webRoot": "${workspaceFolder}/frontend"
+      }
+    },
+    {
+      // Use this instead if you already have `npm start` running in your own
+      // terminal. webRoot points at frontend/ so CRA's webpack:// source maps
+      // resolve — pointing it at the workspace root is why breakpoints go grey.
+      "name": "Web: attach Chrome to :3000",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend",
+      "userDataDir": "${workspaceFolder}/.vscode/.chrome-profile",
+      "skipFiles": [
+        "${workspaceFolder}/frontend/node_modules/**",
+        "**/node_modules/**"
+      ]
+    },
+    {
+      // Debug a single CRA/Jest test. --runInBand is required: workers run in
+      // child processes the debugger cannot see.
+      "name": "Web: debug Jest tests",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/frontend/node_modules/.bin/react-scripts",
+      "args": ["test", "--runInBand", "--no-cache", "--watchAll=false"],
+      "cwd": "${workspaceFolder}/frontend",
+      "env": { "CI": "true" },
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack (API + Web)",
+      "configurations": ["API: nodemon (auto-restart)", "Web: start CRA + Chrome"],
+      "stopAll": true,
+      "presentation": { "group": "1_full", "order": 1 }
+    }
+  ]
+}

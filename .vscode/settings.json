@@ -1,0 +1,33 @@
+{
+  // Any `node --inspect`, `npm start`, `nodemon` etc. you type into the
+  // integrated terminal gets a debugger attached automatically.
+  // "smart" = attaches to your scripts, ignores tooling in node_modules/.bin.
+  "debug.javascript.autoAttachFilter": "smart",
+
+  // Same skipFiles for terminal-auto-attached processes, so stepping never
+  // drops you into express/mongoose internals.
+  "debug.javascript.terminalOptions": {
+    "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+  },
+
+  // Show inline values next to code while paused.
+  "debug.inlineValues": "auto",
+  "debug.showBreakpointsInOverviewRuler": true,
+  "debug.toolBarLocation": "docked",
+
+  // Keeps the huge backend/tmp + uploads dirs out of search and file watching.
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/build": true,
+    "backend/tmp": true,
+    "backend/uploads": true,
+    ".vscode/.chrome-profile": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/build/**": true,
+    "backend/tmp/**": true,
+    "backend/uploads/**": true,
+    ".vscode/.chrome-profile/**": true
+  }
+}

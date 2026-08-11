@@ -6,8 +6,10 @@ import Store from "./redux/store.js";
 import { loadUser } from "./redux/actions/user.js";
 import axios from 'axios';
 import { server } from './server.js';
+import { useSelector } from 'react-redux';
 
 const App = () => {
+  const { loading } = useSelector((state) => state.user);
 
   useEffect(() => {
     axios.get(`${server}/user/get-user`, { withCredentials: true }).then((res) => {
@@ -16,6 +18,7 @@ const App = () => {
       toast.error(err?.response?.data?.message)
     })
   }, []);
+
   useEffect(() => {
     Store.dispatch(loadUser());
     // Store.dispatch(loadSeller());
@@ -24,7 +27,7 @@ const App = () => {
     // getStripeApiKey();
   }, []);
   return (
-    <div>
+    loading ? (null) : (
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<HomePage />} />
@@ -40,7 +43,8 @@ const App = () => {
         </Routes>
         <ToastContainer position="top-center" autoClose={3000} />
       </BrowserRouter>
-    </div>
+    )
+
   )
 }
 
