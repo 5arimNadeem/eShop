@@ -15,7 +15,7 @@ import Navbar from "./Navbar";
 import { useSelector } from "react-redux";
 import { backendUrl } from "../../server";
 import Cart from "../cart/Cart.jsx";
-// import Wishlist from "../Wishlist/Wishlist";
+import Wishlist from "../Wishlist/Wishlist.jsx";
 // import { RxCross1 } from "react-icons/rx";
 // import { backendUrl } from "../../server";
 // import { getImageUrl } from "../../utils/imageUtils";
@@ -149,11 +149,11 @@ const Header = ({ activeHeading }) => {
                                     <div className={`${styles.noramlFlex}`}>
                                         <div
                                             className="relative cursor-pointer mr-[15px] p-2 rounded-lg hover:bg-blue-100"
-                                        // onClick={() => setOpenWishlist(true)}
+                                            onClick={() => setOpenWishlist(true)}
                                         >
                                             <AiOutlineHeart size={28} color="#2563eb" />
                                             <span className="absolute -right-1 -top-1 rounded-full bg-blue-400 w-5 h-5 flex items-center justify-center text-white font-bold text-[11px] shadow-md">
-                                                {/* {wishlist && wishlist.length} */}
+                                                {/* {wishlist && wishlist.length}  */}
                                             </span>
                                         </div>
                                     </div>
@@ -161,7 +161,7 @@ const Header = ({ activeHeading }) => {
                                     <div className={`${styles.noramlFlex}`}>
                                         <div
                                             className="relative cursor-pointer mr-[15px] p-2 rounded-lg hover:bg-blue-100"
-                                        // onClick={() => setOpenWishlist(true)}
+                                            onClick={() => setOpenCart(true)}
                                         >
                                             <AiOutlineShoppingCart size={28} color="#2563eb" />
                                             <span className="absolute -right-1 -top-1 rounded-full bg-blue-400 w-5 h-5 flex items-center justify-center text-white font-bold text-[11px] shadow-md">
@@ -211,6 +211,15 @@ const Header = ({ activeHeading }) => {
                                             null
                                         )
                                     }
+
+                                    {
+                                        openWishlist ? (
+                                            <Wishlist setOpenWishlist={setOpenWishlist} />
+                                        ) : (
+                                            null
+                                        )
+                                    }
+
                                 </div>
                             </div>
                         </div>
