@@ -78,7 +78,7 @@ const ProductDetailsCard = ({ setOpen, data }) => {
                                             {data.price ? data.price + "$" : null}
                                         </h3>
                                     </div>
-                                    <div className="flex items-center mt-12 justify-between pr-3">
+                                    <div className={`${styles.noramlFlex} mt-12 justify-between pr-3`}>
                                         <div>
                                             <button className='bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 p-3 m-1'
 

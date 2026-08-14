@@ -8,11 +8,11 @@ import EventsPage from "./pages/EventsPage.jsx";
 import FAQPage from "./pages/FAQPage.jsx";
 // import SellerActivationPage from "./pages/SellerActivationPage";
 // import ShopLoginPage from "./pages/ShopLoginPage";
-// import ProductDetailsPage from "./pages/ProductDetailsPage.jsx";
+import ProductDetailsPage from "./pages/ProductDetailsPage.jsx";
 // import ProfilePage from "./pages/ProfilePage.jsx";
-// import CheckoutPage from "./pages/CheckoutPage.jsx";
-// import PaymentPage from "./pages/PaymentPage.jsx";
-// import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
+import CheckoutPage from "./pages/CheckoutPage.jsx";
+import PaymentPage from "./pages/PaymentPage.jsx";
+import OrderSuccessPage from "./pages/OrderSuccessPage.jsx";
 // import OrderDetailsPage from "./pages/OrderDetailsPage.jsx";
 // import TrackOrderPage from "./pages/TrackOrderPage.jsx";
 // import UserInbox from "./pages/UserInbox.jsx";
@@ -27,11 +27,11 @@ export {
     FAQPage,
     // SellerActivationPage,
     // ShopLoginPage,
-    // ProductDetailsPage,
+    ProductDetailsPage,
     // ProfilePage,
-    // CheckoutPage,
-    // PaymentPage,
-    // OrderSuccessPage,
+    CheckoutPage,
+    PaymentPage,
+    OrderSuccessPage,
     // OrderDetailsPage,
     // TrackOrderPage,
     // UserInbox
