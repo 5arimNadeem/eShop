@@ -13,7 +13,7 @@ const EventsPage = () => {
             ) : ( */}
                 <div>
                     <Header activeHeading={4} />
-                    <main className="pt-[190px]">
+                    <main>
                         <EventCard active={true}/>
                     </main>
                 </div>

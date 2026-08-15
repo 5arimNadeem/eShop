@@ -29,9 +29,9 @@ const ProductDetails = ({ data }) => {
             {
                 data ? (
                     // section one 
-                    <div className={`${styles.section} w-[90%] 800px:w-[80%] h-screen`}>
+                    <div className={`${styles.section} w-[90%] 800px:w-[80%] mb-10`}>
                         <div className="w-full py-5">
-                            <div className="block w-full 800px:flex mt-10 ">
+                            <div className="block w-full 800px:flex">
                                 <div className="w-full 800px:w-[50%]">
                                     <img src={data?.image_Url[select]?.url}
                                         className='w-[80%]'
@@ -151,9 +151,9 @@ const ProductDetails = ({ data }) => {
 const ProductDetailsInfo = ({ data }) => {
     const [active, setActive] = useState(1)
     return (
-        <div className='bg-gray-300 px-3 800px:px-1 py-2 rounded h-[40vh] '>
-            <div className='w-full flex justify-between border-b pt-10 pb-2'>
-                <div className="relative">
+        <div className='bg-gray-300 px-3 800px:px-1 py-2 rounded mt-10'>
+            <div className='w-full 800px:w-[80%] mx-auto flex justify-between border-b pt-4 pb-2'>
+                <div className="relative"> 
                     <h5 className='text-[#000] text-[20px] font-[600] leading-5 cursor-pointer 800px:text-[25px] px-1'
                         onClick={() => setActive(1)}
                     >

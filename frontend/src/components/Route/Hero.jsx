@@ -23,7 +23,7 @@ const Hero = ({data, image}) => {
             {/* Dark band behind the floating transparent header so its white text/icons stay readable */}
             <div className="hidden 800px:block absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-black/70 via-black/30 to-transparent z-[5]"></div>
 
-            <div className={`${styles.section} w-[90%] 800px:w-[85%] flex flex-col 800px:flex-row items-center justify-between pt-16 pb-16 800px:pt-[210px] 800px:pb-20 relative z-10`}>
+            <div className={`${styles.section} w-[90%] 800px:w-[85%] flex flex-col 800px:flex-row items-center justify-between pt-16 pb-16 800px:pb-20 relative z-10`}>
                 {/* Left: Text */}
                 <div className="w-full 800px:w-1/2 text-gray-800 mb-12 800px:mb-0">
                     <div className="inline-block bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-medium mb-6">

@@ -22,7 +22,7 @@ const ProductDetailsPage = () => {
         <div>
 
             <Header />
-            <main className='mt-20'>
+            <main>
                 <ProductDetails data={data} />
             </main>
             {

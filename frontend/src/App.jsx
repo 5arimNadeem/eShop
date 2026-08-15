@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { ActivationPage, BestSellingPage, EventsPage, FAQPage, HomePage, LoginPage, ProductsPage, SignupPage, CheckoutPage, PaymentPage, OrderSuccessPage, ProductDetailsPage } from './Routes.js'
+import { ActivationPage, BestSellingPage, EventsPage, FAQPage, HomePage, LoginPage, ProductsPage, SignupPage, CheckoutPage, PaymentPage, OrderSuccessPage, ProductDetailsPage, ProfilePage } from './Routes.js'
 import { toast, ToastContainer } from "react-toastify";
 import Store from "./redux/store.js";
 import { loadUser } from "./redux/actions/user.js";
 import axios from 'axios';
 import { server } from './server.js';
 import { useSelector } from 'react-redux';
+import ProtectedRoute from "./ProtectedRoute.js"
 
 const App = () => {
-  const { loading } = useSelector((state) => state.user);
+  const { loading, isAuthenticated } = useSelector((state) => state.user);
 
   useEffect(() => {
     axios.get(`${server}/user/get-user`, { withCredentials: true }).then((res) => {
@@ -42,6 +43,12 @@ const App = () => {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/order/success/:id" element={<OrderSuccessPage />} />
+
+          <Route path="/profile" element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <ProfilePage />
+            </ProtectedRoute> 
+          } />
 
 
         </Routes>
