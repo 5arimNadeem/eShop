@@ -10,6 +10,7 @@ const shopSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, "Please enter your shop email address"],
+        unique: true,  // 🛡️ DB-level guard: prevents duplicate shops even in race conditions
     },
     password: {
         type: String,
@@ -76,7 +77,7 @@ const shopSchema = new mongoose.Schema({
 // Hash password
 shopSchema.pre("save", async function (next) {
     if (!this.isModified("password")) {
-        next();
+        return next();  // ← MUST return here, otherwise bcrypt runs on every save
     }
     this.password = await bcrypt.hash(this.password, 10);
 });

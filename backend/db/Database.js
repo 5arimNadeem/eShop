@@ -6,12 +6,11 @@ const maxRetries = 5;
 const connectDatabase = async () => {
     try {
         await mongoose.connect(process.env.DB_URL, {
-            // useNewUrlParser: true,
-            // useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 30000, // 30 seconds
-            socketTimeoutMS: 45000, // 45 seconds
+            serverSelectionTimeoutMS: 30000, // 30 seconds to find a server
+            socketTimeoutMS: 45000,          // 45 seconds for socket ops
+            bufferTimeoutMS: 30000,          // wait 30s for queries to buffer (Atlas cold-start fix)
             retryWrites: true,
-            maxPoolSize: 10, // Connection pool
+            maxPoolSize: 10,
         });
 
         console.log('MongoDB connected successfully');
