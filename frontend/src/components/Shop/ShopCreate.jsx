@@ -1,76 +1,112 @@
 import React, { useState } from 'react'
-import axios from "axios";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { RxAvatar } from "react-icons/rx";
 import styles from "../../styles/styles";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from 'axios';
 import { server } from '../../server';
 import { toast } from 'react-toastify';
+import { RxAvatar } from 'react-icons/rx';
 
-const SignUp = () => {
+
+const ShopCreate = () => {
     const [email, setEmail] = useState("");
-    const [name, setName] = useState("")
+    // useState for name, phonenumber, address, zipCode
+    const [name, setName] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState();
+    const [address, setAddress] = useState("");
+    const [zipCode, setZipCode] = useState();
+    // for avatar state
+    const [avatar, setAvatar] = useState();
     const [password, setPassword] = useState("");
     const [visible, setVisible] = useState(false);
-    // const [loading, setLoading] = useState(false);
-    const [avatar, setAvatar] = useState(null)
 
-    const handleFileInputChange = (e) => {
-        const file = e.target.files[0]
+    const navigate = useNavigate();
 
-        setAvatar(file)
-    }
     const handleSubmit = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
         const config = { headers: { "Content-Type": "multipart/form-data" } };
 
+        // Create FormData for file upload
+        const formData = new FormData();
 
-        const newForm = new FormData();
+        formData.append("file", avatar);
+        formData.append("name", name);
+        formData.append("email", email);
+        formData.append("password", password);
+        formData.append("zipCode", zipCode);
+        formData.append("address", address);
+        formData.append("phoneNumber", phoneNumber);
 
-        newForm.append("name", name);
-        newForm.append("email", email);
-        newForm.append("password", password);
-        newForm.append("file", avatar);
-
-
-        await axios.post(`${server}/user/create-user`, newForm, config).then((res) => {
-            toast.success("user created successfully");
+        await axios.post(
+            `${server}/shop/create-shop`,
+            formData, config
+        ).then((res) => {
+            toast.success(res?.data?.message)
             setName("");
             setEmail("");
             setPassword("");
             setAvatar(null);
+            setZipCode("");
+            setAddress("");
+            setPhoneNumber("");
+            navigate("/shop-login");
         }).catch((error) => {
             const errorMessage =
                 error.response?.data?.message || "Something went wrong!";
             toast.error(errorMessage);
         })
-    }
+    };
+
+    const handleFileInputChange = (e) => {
+        const file = e.target.files[0];
+        setAvatar(file);
+    };
+
     return (
         <div className="min-h-screen bg-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="border sm:mx-auto sm:w-full sm:max-w-md rounded-xl">
                 {/* <div className=""> */}
                 <h2 className="mt-4 text-center text-3xl font-extrabold text-gray-900">
-                    Register a new user
+                    Register as a Seller
                 </h2>
                 {/* </div> */}
                 <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                     <div className="py-3 px-4 shodow sm:rounded-lg sm:px-10">
                         <form className="space-y-6" onSubmit={handleSubmit}>
+
                             <div>
                                 <label
-                                    htmlFor="name"
+                                    htmlFor="email"
                                     className="block text-sm font-medium text-gray-700"
                                 >
-                                    Full Name
+                                    Shop Name
                                 </label>
                                 <div className="mt-1">
                                     <input
-                                        type="text"
-                                        name="text"
-                                        autoComplete="name"
+                                        type="name"
+                                        name="name"
                                         required
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
+                                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="email"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Shop Phone Number
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        type="number"
+                                        name="phone_number"
+                                        required
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value)}
                                         className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     />
                                 </div>
@@ -91,6 +127,44 @@ const SignUp = () => {
                                         required
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="address"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Address
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        type="address"
+                                        name="address"
+                                        required
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="zipcode"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Zip Code
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        type="number"
+                                        name="zipcode"
+                                        required
+                                        value={zipCode}
+                                        onChange={(e) => setZipCode(e.target.value)}
                                         className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     />
                                 </div>
@@ -130,7 +204,6 @@ const SignUp = () => {
                                 </div>
                             </div>
 
-                            {/* Avatar file input */}
                             <div>
                                 <label
                                     htmlFor="avatar"
@@ -166,19 +239,6 @@ const SignUp = () => {
                                 </div>
                             </div>
 
-                            {/* <div>
-                                <label htmlFor="avatar"
-                                    className='block text-sm font-medium text-gray-700'
-                                >
-
-                                </label>
-                                <div className="mt-2 flex items-center">
-                                    <span className="inline-block h-8 w-8-rounded-full overflow-hidden">
-
-                                    </span>
-                                </div>
-                            </div> */}
-
                             <div>
                                 <button
                                     type="submit"
@@ -187,13 +247,23 @@ const SignUp = () => {
                                 // 'bg-gray-400 cursor-not-allowed'
 
                                 >
+                                    {/* {loading ? (
+                                        <div className="flex items-center">
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Signing in...
+                                        </div>
+                                    ) : ( */}
                                     Submit
+                                    {/* )} */}
                                 </button>
                             </div>
                             <div className={`${styles.noramlFlex} text-[14px] w-full`}>
-                                <h4>Already have any account?</h4>
-                                <Link to="/login" className="text-blue-600 font-semibold pl-2">
-                                    Sign in
+                                <h4>Already have an account?</h4>
+                                <Link to="/shop-login" className="text-blue-600 font-semibold pl-2">
+                                    Shop Login
                                 </Link>
                             </div>
                         </form>
@@ -204,6 +274,6 @@ const SignUp = () => {
     )
 }
 
-export default SignUp
+export default ShopCreate
 
 

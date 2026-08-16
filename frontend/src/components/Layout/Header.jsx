@@ -196,7 +196,7 @@ const Header = ({ activeHeading }) => {
 
                             {/* Become Seller */}
                             <Link
-                                to="/seller"
+                                to="/shop-create"
                                 onClick={() => setMobileMenuOpen(false)}
                                 className="flex items-center justify-center gap-1 w-full py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-sm font-semibold"
                             >
@@ -250,7 +250,7 @@ const Header = ({ activeHeading }) => {
                             </div>
 
                             <div className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-6 py-3 rounded-lg shadow-lg transition-all duration-300">
-                                <Link to="/seller">
+                                <Link to="/shop-create">
                                     <h1 className="text-white flex items-center font-semibold">
                                         Become Seller
                                         <IoIosArrowForward className="ml-1" />
