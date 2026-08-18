@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { userReducer } from './reducers/user';
 // import { cartReducer } from './reducers/cart';
 // import { wishlistReducer } from './reducers/wishlist';
-// import { sellerReducer } from './reducers/seller';
+import { sellerReducer } from './reducers/seller';
 // import { productReducer } from './reducers/product';
 // import { eventReducer } from './reducers/event';
 // import { orderReducer } from './reducers/order';
@@ -12,7 +12,7 @@ const Store = configureStore({
         user: userReducer,
         // cart: cartReducer,
         // wishlist: wishlistReducer,
-        // seller: sellerReducer,
+        seller: sellerReducer,
         // products: productReducer,
         // event: eventReducer,
         // order: orderReducer

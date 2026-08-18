@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { ActivationPage, BestSellingPage, EventsPage, FAQPage, HomePage, LoginPage, ProductsPage, SignupPage, CheckoutPage, PaymentPage, OrderSuccessPage, ProductDetailsPage, ProfilePage, ShopCreatePage, SellerActivationPage } from './Routes.js'
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { ActivationPage, BestSellingPage, EventsPage, FAQPage, HomePage, LoginPage, ProductsPage, SignupPage, CheckoutPage, PaymentPage, OrderSuccessPage, ProductDetailsPage, ProfilePage, ShopCreatePage, SellerActivationPage, ShopLoginPage } from './Routes.js'
 import { toast, ToastContainer } from "react-toastify";
 import Store from "./redux/store.js";
-import { loadUser } from "./redux/actions/user.js";
+import { loadSeller, loadUser } from "./redux/actions/user.js";
 import axios from 'axios';
 import { server } from './server.js';
 import { useSelector } from 'react-redux';
@@ -11,6 +11,7 @@ import ProtectedRoute from "./ProtectedRoute.js"
 
 const App = () => {
   const { loading, isAuthenticated } = useSelector((state) => state.user);
+  const { loading: sellerLoading } = useSelector((state) => state.seller);
 
   useEffect(() => {
     axios.get(`${server}/user/get-user`, { withCredentials: true }).then((res) => {
@@ -22,13 +23,13 @@ const App = () => {
 
   useEffect(() => {
     Store.dispatch(loadUser());
-    // Store.dispatch(loadSeller());
+    Store.dispatch(loadSeller());
     // Store.dispatch(getAllProducts());
     // Store.dispatch(getAllEvents());
     // getStripeApiKey();
   }, []);
   return (
-    loading ? (null) : (
+    loading || sellerLoading ? (null) : (
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<HomePage />} />
@@ -60,11 +61,14 @@ const App = () => {
 
           <Route path="/shop-create" element={<ShopCreatePage />} />
 
+          <Route path="/shop-login" element={<ShopLoginPage />} />
+
 
         </Routes>
         <ToastContainer position="top-center" autoClose={3000} />
       </BrowserRouter>
     )
+    
 
   )
 }

@@ -7,7 +7,7 @@ import BestSellingPage from "./pages/BestSellingPage.jsx";
 import EventsPage from "./pages/EventsPage.jsx";
 import FAQPage from "./pages/FAQPage.jsx";
 import SellerActivationPage from "./pages/SellerActivationPage.jsx";
-// import ShopLoginPage from "./pages/ShopLoginPage";
+import ShopLoginPage from "./pages/ShopLoginPage.jsx";
 import ProductDetailsPage from "./pages/ProductDetailsPage.jsx";
 import ShopCreatePage from "./pages/ShopCreatePage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
@@ -27,7 +27,7 @@ export {
     EventsPage,
     FAQPage,
     SellerActivationPage,
-    // ShopLoginPage,
+    ShopLoginPage,
     ProductDetailsPage,
     ProfilePage,
     ShopCreatePage,

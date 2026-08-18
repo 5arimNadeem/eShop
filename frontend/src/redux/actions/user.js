@@ -23,32 +23,32 @@ export const loadUser = () => async (dispatch) => {
     }
 };
 
-//load seller
+// load seller
 
-// export const loadSeller = () => async (dispatch) => {
-//     try {
-//         // console.log("🔄 Dispatching LoadSellerRequest...");
-//         dispatch({ type: "LoadSellerRequest" });
+export const loadSeller = () => async (dispatch) => {
+    try {
+        // console.log("🔄 Dispatching LoadSellerRequest...");
+        dispatch({ type: "LoadSellerRequest" });
 
-//         const { data } = await axios.get(`${server}/shop/getSeller`, {
-//             withCredentials: true,
-//         });
+        const { data } = await axios.get(`${server}/shop/get-seller`, {
+            withCredentials: true,
+        });
 
-//         // console.log("✅ Seller data received:", data);
-//         // console.log("🚀 Dispatching LoadSellerSuccess with payload:", data.seller);
+        // console.log("✅ Seller data received:", data);
+        // console.log("🚀 Dispatching LoadSellerSuccess with payload:", data.seller);
 
-//         dispatch({
-//             type: "LoadSellerSuccess",
-//             payload: data.seller,
-//         });
-//     } catch (error) {
-//         // console.log("❌ loadSeller failed:", error.response?.data?.message || error.message);
-//         dispatch({
-//             type: "LoadSellerFail",
-//             payload: error.response?.data?.message || "Failed to load seller",
-//         });
-//     }
-// };
+        dispatch({
+            type: "LoadSellerSuccess",
+            payload: data.seller,
+        });
+    } catch (error) {
+        // console.log("❌ loadSeller failed:", error.response?.data?.message || error.message);
+        dispatch({
+            type: "LoadSellerFail",
+            payload: error.response?.data?.message || "Failed to load seller",
+        });
+    }
+};
 
 
 

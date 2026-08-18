@@ -9,9 +9,11 @@ const sendEmail = require("../utils/sendMail.js");
 const sendToken = require("../utils/jwtToken.js");
 const catchAsyncError = require("../middleware/catchAsyncErrors.js");
 const ErrorHandler = require("../utils/ErrorHandler.js");
-const { isAuthenticated } = require("../middleware/auth.js")
-// const sendShopToken = require("../utils/shopToken.js");
-// const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
+// const { isAuthenticated } = require("../middleware/auth.js")
+const sendShopToken = require("../utils/shopToken.js");
+const user = require("../model/user.js");
+const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
+const { isSeller } = require("../middleware/auth.js");
 // const { isSeller } = require("../middleware/auth.js");
 // const { uploadToCloudinary } = require("../utils/cloudinary.js");
 router.post("/create-shop", upload.single("file"), async (req, res, next) => {
@@ -126,5 +128,59 @@ router.post(
         }
     })
 );
+
+// login function
+
+router.post(
+    "/login-shop",
+    catchAsyncError(async (req, res, next) => {
+        try {
+            const { email, password } = req.body;
+
+            if (!email || !password) {
+                return next(new ErrorHandler("Please enter email and password", 400));
+            }
+
+            const user = await Shop.findOne({ email }).select("+password");
+            // debugger;
+
+            if (!user) {
+                return next(new ErrorHandler("shop not found", 401));
+            }
+
+            const isPasswordValid = await user.comparePassword(password);
+
+            if (!isPasswordValid) {
+                return next(new ErrorHandler("Invalid email or password", 401));
+            }
+
+            sendShopToken(user, 200, res);
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+// load user 
+router.get(
+    "/get-seller",
+    isSeller,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            // we will also try tthe underscore id if we want
+            const seller = await Shop.findById(req.seller.id);
+            if (!seller) {
+                return next(new ErrorHandler("Seller not found", 404));
+            }
+            res.status(200).json({
+                success: true,
+                seller: seller,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
 
 module.exports = router;
