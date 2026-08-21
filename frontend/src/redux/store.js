@@ -3,7 +3,7 @@ import { userReducer } from './reducers/user';
 // import { cartReducer } from './reducers/cart';
 // import { wishlistReducer } from './reducers/wishlist';
 import { sellerReducer } from './reducers/seller';
-// import { productReducer } from './reducers/product';
+import { productReducer } from './reducers/product';
 // import { eventReducer } from './reducers/event';
 // import { orderReducer } from './reducers/order';
 
@@ -13,7 +13,7 @@ const Store = configureStore({
         // cart: cartReducer,
         // wishlist: wishlistReducer,
         seller: sellerReducer,
-        // products: productReducer,
+        products: productReducer,
         // event: eventReducer,
         // order: orderReducer
     },
