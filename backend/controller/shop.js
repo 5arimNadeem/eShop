@@ -182,5 +182,69 @@ router.get(
     })
 );
 
+// logout shop 
+router.get("/logout", catchAsyncError(async (req, res, next) => {
+    try {
+        res.cookie("seller_token", null, {
+            expires: new Date(Date.now()),
+            httpOnly: true,
+        });
+        res.status(200).json({
+            success: true,
+            message: "Logged out successfully",
+        });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+}))
+
+//get shop info
+router.get(
+    "/get-shop-info/:id",
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const shop = await Shop.findById(req.params.id);
+            res.status(201).json({
+                success: true,
+                shop,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+
+// update seller info
+router.put(
+    "/update-seller-info",
+    isSeller,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const { name, description, address, phoneNumber, zipCode } = req.body;
+
+            const shop = await Shop.findOne(req.seller._id);
+
+            if (!shop) {
+                return next(new ErrorHandler("User not found", 400));
+            }
+
+            shop.name = name;
+            shop.description = description;
+            shop.address = address;
+            shop.phoneNumber = phoneNumber;
+            shop.zipCode = zipCode;
+
+            await shop.save();
+
+            res.status(201).json({
+                success: true,
+                shop,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
 
 module.exports = router;

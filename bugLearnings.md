@@ -383,7 +383,7 @@ A ternary operator was inverted. `!success` was used as the condition, meaning w
 {error ? (
     <p style={{ color: "red" }}>{error}</p>
 ) : success ? (
-    <p style={{ color: "green" }}>Account created! You can now login.</p>
+    <p style={{ color: "blue" }}>Account created! You can now login.</p>
 ) : (
     <p>Activating your account...</p>
 )}
@@ -501,3 +501,274 @@ state.error = action.payload;
 
 *Last updated: 2026-08-21*
 *Project: eShop — Multi-Vendor MERN Application*
+
+---
+---
+
+## Chapter 9: The Empty Shelf
+
+**Date Encountered:** 2026-08-22
+**Symptom:** BestDeals section on the homepage showed nothing. SuggestedProduct also showed nothing.
+
+### The Story
+
+The Redux store had `productReducer` registered, the action `getAllProducts` existed, the reducer handled the response correctly — but `allProducts` was always `undefined`. The shelf existed, the stock existed in the warehouse, but nobody ever called the delivery truck.
+
+In `App.jsx` line 46, the dispatch call was commented out:
+```js
+// Store.dispatch(getAllProducts());
+```
+
+Every component reading `state.products.allProducts` got `undefined`, fell back to `[]`, and rendered nothing.
+
+### Investigation Steps
+
+1. **Observe:** Read `BestDeals.jsx` — reads `allProducts` from `state.products`. Reads `store.js` — `products: productReducer` is registered ✅. Searched for `getAllProducts` across the whole codebase.
+2. **Hypothesize:** Action exists, reducer exists, store is registered — but is the action ever dispatched? `grep` search found it **only commented out** in `App.jsx`.
+3. **Test (mental model):** If `getAllProducts` is never dispatched, the reducer's `getAllProductsSuccess` case never runs, so `state.products.allProducts` stays `undefined` forever.
+4. **Conclude:** Uncomment the dispatch in `App.jsx`.
+
+### Root Cause
+
+```js
+// App.jsx — nobody called the delivery truck
+useEffect(() => {
+    Store.dispatch(loadUser());
+    Store.dispatch(loadSeller());
+    // Store.dispatch(getAllProducts());  ← commented out
+}, []);
+```
+
+### The Fix
+
+```js
+import { getAllProducts } from "./redux/actions/product.js";
+
+useEffect(() => {
+    Store.dispatch(loadUser());
+    Store.dispatch(loadSeller());
+    Store.dispatch(getAllProducts());  // ← fetch all products on app startup
+}, []);
+```
+
+### The Lesson
+
+> **When Redux state is always empty, walk the full chain:** Action → Reducer → Store → Dispatch.
+> The store can be perfectly wired and the reducer perfectly correct — but if nothing ever dispatches the action, the state never changes.
+>
+> **The dispatch in `App.jsx` startup `useEffect` is the right place** for data that every page needs. It runs once when the app loads, fills the store, and every component that reads from it gets fresh data immediately.
+
+---
+---
+
+## Chapter 10: The Mutated Shelf
+
+**Date Encountered:** 2026-08-22
+**Symptom:** ProductsPage showed wrong ordering after navigation. Category filtering produced stale results. `.sort()` was producing unpredictable behavior across navigations.
+
+### The Story
+
+JavaScript's `.sort()` is a **mutating** method. It sorts the original array in-place AND returns it. When `productData` is a named export from a static data file, it is a **module singleton** — the same reference is shared everywhere that imports it.
+
+When `ProductsPage` called `productData.sort(...)`, it permanently reordered the shared `productData` array for the rest of the app's lifetime. Every other component that imported `productData` now saw a differently-ordered array.
+
+### Investigation Steps
+
+1. **Observe:** Read `ProductsPage.jsx` line 20: `productData && productData.sort(...)`.
+2. **Hypothesize:** `.sort()` mutates the original. `productData` is a module-level export — a singleton. Every import shares the same reference. After first render, the original is corrupted.
+3. **Test (mental model):**
+   ```
+   First render (no category):  productData.sort() → mutates original
+   Second render (with category): productData.filter() → operates on already-mutated array
+   Third navigation: productData is in a permanently different order
+   ```
+4. **Conclude:** Spread into a new array before sorting/filtering.
+
+### Root Cause
+
+```js
+// BEFORE — mutates the shared module-level array
+const d = productData && productData.sort((a, b) => a.total_sell - b.total_sell)
+
+// After this runs, every import of productData sees the mutated version
+```
+
+### The Fix
+
+```js
+// AFTER — spread creates a fresh copy, original is never touched
+const d = productData ? [...productData].sort((a, b) => a.total_sell - b.total_sell) : [];
+const d = productData ? [...productData].filter((i) => i.category === categoryData) : [];
+```
+
+### The Lesson
+
+> **JavaScript array methods divide into two types — mutating and non-mutating:**
+>
+> | Mutating (modifies original) | Non-mutating (returns new array) |
+> |------------------------------|----------------------------------|
+> | `.sort()` | `.filter()` |
+> | `.reverse()` | `.map()` |
+> | `.splice()` | `.slice()` |
+> | `.push()`, `.pop()` | `.concat()` |
+>
+> **Rule:** Before calling any mutating method on shared data, copy first: `[...array].sort(...)`.
+>
+> **Module singletons are especially dangerous** — static data files export a reference. Every import points to the same object in memory. If you mutate it in one component, every other component sees the mutation. This is silent, has no error, and is very hard to track down.
+
+*Last updated: 2026-08-22*
+
+---
+---
+
+## Chapter 11: The Blank Product Page
+
+**Date Encountered:** 2026-08-22
+**Symptom:** Clicking a product card navigated to `/product/{name}` correctly. Header and footer appeared — but the product content section was completely empty.
+
+### The Story
+
+This bug looked like a crash ("blank page") but was actually a **conditional render returning null**. `ProductDetails` has `{data ? (...) : null}` — when `data` is null, it renders nothing. The component mounted successfully, header and footer showed, but the product block was invisible because `data` was always null.
+
+Three bugs lived in the same 9-line `useEffect` block, and each one alone was enough to keep `data` null forever.
+
+**Bug A — Wrong Redux key:** Line 11 read `state.products.products`. In the productReducer, `products` is the **shop-specific** list, only filled when `getAllProductShop(id)` is dispatched (i.e., when viewing a single shop page). On the product details page, this was always `undefined` or `[]`. The correct key is `allProducts` — filled globally by `getAllProducts()`.
+
+**Bug B — No optional chaining guard:** `products.find(...)` with no `?.`. On the very first render, `products` is `undefined` (the API call hasn't returned yet). `undefined.find(...)` throws a `TypeError` inside `useEffect`. This error is unhandled but doesn't kill the render — it just silently leaves `data` as `null`.
+
+**Bug C — Missing dependency array:** `useEffect(() => {...})` with no `[]`. This runs after every single render. `setData()` triggers a re-render. That re-render triggers the effect again. **Infinite loop** — the component hammers the API and thrashes state forever.
+
+**Bonus — Single data source:** Products shown in `ProductsPage` come from static `productData`. Products in Redux `allProducts` come from the real database. If the DB is empty, clicking any static product would still show nothing even after fixing bugs A and B. The solution: search both sources, use whichever finds the product.
+
+### Investigation Steps
+
+1. **Observe:** URL was correct. Route existed in `App.jsx`. Header + footer rendered → component mounted OK → it's not a crash. Product content missing → `data` is null → conditional render shows nothing.
+2. **Hypothesize (layered):**
+   - Why is data null? → `useEffect` runs but `find()` returns undefined
+   - Why does find() return undefined? → wrong list is being searched (`products` = shop list, always empty here)
+   - What crashes silently? → `products.find()` with `products = undefined` on first render
+   - What makes it thrash? → no dependency array → runs on every render
+   - What about static data products? → `allProducts` is API-only, static products won't be in it
+3. **Test:** Added `console.log("[DEBUG] found in API:", !!fromApi, "| found in static:", !!fromStatic)` to confirm which source finds the product at runtime.
+4. **Conclude:** Fix all three bugs + add dual-source lookup.
+
+### Root Cause
+
+```js
+// BEFORE — three bugs at once
+const { products } = useSelector((state) => state.products)  // ← Bug A: wrong key
+
+useEffect(() => {
+    const data = products.find((i) => i.name === productName)  // ← Bug B: no ?.
+    setData(data)
+});  // ← Bug C: no dependency array → infinite loop
+```
+
+### The Fix
+
+```js
+const { allProducts } = useSelector((state) => state.products)  // ✅ correct key
+
+useEffect(() => {
+    const fromApi    = allProducts?.find((i) => i.name === productName);  // ✅ safe
+    const fromStatic = productData?.find((i) => i.name === productName);  // ✅ fallback
+    setData(fromApi || fromStatic || null);                                // ✅ dual source
+}, [allProducts, productName]);  // ✅ dependency array
+```
+
+### The Lesson
+
+> **"Header and footer show, content is blank" = conditional render returning null, NOT a crash.**
+> When you see this pattern, find every `{condition ? (...) : null}` in the render tree and ask: "what is `condition` right now, and how does it get its value?"
+
+> **Know your Redux state shape.** Two keys that look similar but mean completely different things:
+> ```
+> state.products.allProducts   ← global list (getAllProducts)
+> state.products.products      ← one shop's list (getAllProductShop)
+> ```
+> Using the wrong key silently returns undefined or [], and find() returns undefined, and data stays null. No error. Just silence.
+
+> **The `useEffect` dependency array is not optional.** Without it, every `setData()` call inside the effect triggers a re-render, which re-triggers the effect, which calls `setData()` again. Infinite loop. Always add `[deps]`.
+
+> **Dual-source lookup pattern** — useful in development when the DB may be empty but static data is available:
+> ```js
+> const result = apiSource?.find(predicate) || staticSource?.find(predicate) || null;
+> ```
+> This lets the UI work in both development (static data) and production (real API) without changing any code.
+
+*Last updated: 2026-08-22*
+
+---
+---
+
+## Chapter 12: The Shape Mismatch
+
+**Date Encountered:** 2026-08-22
+**Symptom:** Clicking a product from the homepage navigated to the correct URL, but the page crashed with:
+`TypeError: Cannot read properties of undefined (reading '0')`
+The crash pointed directly to `ProductDetails` at the line reading `data.images[select]`.
+
+### The Story
+
+The app had two data sources — static demo data and a real API. Both were used to populate product cards. When a user clicked a product from the static data, the correct product was found and passed to `ProductDetails`. But `ProductDetails` was written assuming API data, which stores images in `data.images` (array of filenames). Static data stores images in `data.image_Url` (array of `{url}` objects). So `data.images` was `undefined`, and `undefined[0]` crashed the entire page.
+
+### Investigation Steps
+
+1. **Observe:** Error message: `Cannot read properties of undefined (reading '0')`. Stack trace pointed to `ProductDetails`. The URL contained a real static product name. Product WAS found (our dual-source fix from Chapter 11 worked).
+2. **Hypothesize:** "reading '0'" = something`[0]` where something is `undefined`. Search `ProductDetails` for `[select]` or `[0]`. Found `data.images[select]` on line 136. Static data has `image_Url`, not `images`. So `data.images = undefined`. `undefined[0]` = crash.
+3. **Test (mental model):** Static product shape: `{ image_Url: [{ url: "https://..." }] }`. API product shape: `{ images: ["filename.jpg"] }`. The component only handled one shape.
+4. **Conclude:** Normalize both shapes into one local variable at the top of the component.
+
+### Root Cause
+
+```js
+// BEFORE — assumed one data shape
+src={getImageUrl(data && data.images[select])}
+// Static data: data.images = undefined → undefined[0] = CRASH
+```
+
+### The Fix
+
+```js
+// AFTER — normalize once at the top, use everywhere
+const images = data?.images?.length > 0
+    ? data.images                                    // API product (array of filenames)
+    : (data?.image_Url?.map((img) => img.url) || []) // Static product (array of {url})
+
+// Now all downstream code just uses `images` — no shape checks needed
+src={getImageUrl(images[select])}
+images.map((image, index) => ...)
+```
+
+### The Lesson
+
+> **"Cannot read properties of undefined (reading 'X')"** — read it right-to-left:
+> - `'X'` = the property being accessed
+> - `undefined` = what you tried to access it on
+> - So: `something.X` or `something[X]` where `something === undefined`
+> - Find every place that accesses `.X` or `[X]` in the crashing component
+
+> **The Normalization Pattern — use it whenever two data sources have different shapes:**
+> ```js
+> // ❌ WRONG — scattered shape checks all over JSX
+> src={data?.images?.[0] || data?.image_Url?.[0]?.url}
+> {(data?.images || data?.image_Url?.map(i => i.url))?.map(...)}
+>
+> // ✅ CORRECT — normalize once at the top, clean code everywhere below
+> const images = data?.images?.length > 0
+>     ? data.images
+>     : (data?.image_Url?.map((img) => img.url) || []);
+>
+> src={images[0]}
+> {images.map(...)}
+> ```
+> One normalization line at the top → all downstream code stays clean and readable.
+> If the data shape ever changes, you update ONE line, not twenty.
+
+> **When to normalize:**
+> - Two APIs return the same logical data in different structures
+> - Static/mock data uses different field names than real API data
+> - A third-party library uses different naming than your internal models
+> Normalize at the component boundary — as early as possible, before any logic uses the data.
+
+*Last updated: 2026-08-22*

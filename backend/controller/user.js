@@ -166,6 +166,8 @@ router.get(
     })
 );
 
+// logout user
+
 router.get("/logout", catchAsyncError(async (req, res, next) => {
     try {
         res.cookie("token", null, {

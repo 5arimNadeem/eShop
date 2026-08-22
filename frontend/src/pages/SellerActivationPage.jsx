@@ -60,7 +60,7 @@ const SellerActivationPage = () => {
             {error ? (
                 <p style={{ color: "red" }}>{error}</p>
             ) : success ? (
-                <p style={{ color: "green" }}>Your account has been created successfully! You can now login.</p>
+                <p style={{ color: "blue" }}>Your account has been created successfully! You can now login.</p>
             ) : (
                 <p>Activating your account...</p>
             )}

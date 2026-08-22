@@ -174,7 +174,7 @@ const orderColumns = (ActionIcon) => [
         minWidth: 110,
         flex: 0.6,
         cellClassName: (params) =>
-            params.row.status === "Delivered" ? "greenColor" : "redColor",
+            params.row.status === "Delivered" ? "blueColor" : "redColor",
     },
     { field: "itemsQty", headerName: "Qty", type: "number", minWidth: 80, flex: 0.4 },
     { field: "total", headerName: "Total", type: "number", minWidth: 100, flex: 0.5 },

@@ -5,22 +5,33 @@ import ProductDetails from '../components/Products/ProductDetails.jsx'
 import SuggestedProduct from '../components/Products/SuggestedProduct.jsx'
 import { useParams } from 'react-router-dom'
 import { productData } from '../static/data.jsx'
+import { useSelector } from 'react-redux'
 
 const ProductDetailsPage = () => {
+    // allProducts = global list, filled by getAllProducts() dispatched in App.jsx
+    // products   = shop-specific list, only filled on shop pages — WRONG key for here
+    const { allProducts } = useSelector((state) => state.products)
     const { name } = useParams()
     const [data, setData] = useState(null)
     const productName = name.replace(/-/g, " ");
 
     useEffect(() => {
-        const data = productData.find((i) => i.name === productName)
-        setData(data)
-    }, []);
+        // STEP 1: Search Redux (real API products from the database)
+        const fromApi = allProducts?.find((i) => i.name === productName);
 
-    // console.log(name );
+        // STEP 2: Fallback to static data (for demo products used in dev)
+        const fromStatic = productData?.find((i) => i.name === productName);
+
+        // Use whichever one found the product
+        setData(fromApi || fromStatic || null);
+
+        console.log("[DEBUG] productName:", productName);
+        console.log("[DEBUG] found in API:", !!fromApi, "| found in static:", !!fromStatic);
+
+    }, [allProducts, productName]); // dependency array — re-runs only when these change
 
     return (
         <div>
-
             <Header />
             <main>
                 <ProductDetails data={data} />

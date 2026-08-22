@@ -4,28 +4,26 @@ import React, { useEffect } from "react";
 import { AiOutlineDelete, AiOutlineEye } from "react-icons/ai";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { getAllProductShop } from "../../redux/actions/product";
-import { deleteProduct } from "../../redux/actions/product";
+import { deleteEvent, getAllEventsShop } from "../../redux/actions/event";
 import Loader from "../Layout/Loader";
+// import { getImageUrl } from "../../utils/imageUtils";
 
-const AllProducts = () => {
-    const { products, isLoading } = useSelector((state) => state.products);
+const AllEvents = () => {
+    const { events, isLoading } = useSelector((state) => state.event);
     const { seller } = useSelector((state) => state.seller);
+
     const dispatch = useDispatch();
 
     useEffect(() => {
-        dispatch(getAllProductShop(seller._id));
+        dispatch(getAllEventsShop(seller._id));
     }, [dispatch]);
 
-    // console.log("Products in AllProducts:", products);
-    // console.log("Seller in AllProducts:", seller);
+
 
     const handleDelete = (id) => {
-        dispatch(deleteProduct(id));
+        dispatch(deleteEvent(id));
         window.location.reload();
-
     };
-
 
     const columns = [
         { field: "id", headerName: "Product Id", minWidth: 150, flex: 0.7 },
@@ -64,9 +62,12 @@ const AllProducts = () => {
             type: "number",
             sortable: false,
             renderCell: (params) => {
+                // const d = params.row.name;
+                // const product_name = d.replace(/\s+/g, "-");
+                const id = params.row.id;
                 return (
                     <>
-                        <Link to={`/product/${params.id}`}>
+                        <Link to={`/product/${id}?isEvent=true`}>
                             <Button>
                                 <AiOutlineEye size={20} />
                             </Button>
@@ -96,14 +97,14 @@ const AllProducts = () => {
 
     const row = [];
 
-    products &&
-        products.forEach((item) => {
+    events &&
+        events.forEach((item) => {
             row.push({
                 id: item._id,
                 name: item.name,
                 price: "US$ " + item.discountPrice,
                 Stock: item.stock,
-                sold: item?.sold_out,
+                sold: item.sold_out,
             });
         });
 
@@ -113,7 +114,6 @@ const AllProducts = () => {
                 <Loader />
             ) : (
                 <div className="w-full mx-8 pt-1 mt-10 bg-white">
-                    <h1 className="font-bold text-3xl mb-4">All Products</h1>
                     <DataGrid
                         rows={row}
                         columns={columns}
@@ -127,4 +127,4 @@ const AllProducts = () => {
     );
 };
 
-export default AllProducts;
+export default AllEvents;

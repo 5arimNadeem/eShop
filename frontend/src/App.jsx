@@ -9,10 +9,10 @@ import {
   ShopDashboardPage,
   ShopCreateProduct,
   ShopAllProducts,
-  // ShopCreateEvents,
-  // ShopAllEvents,
-  // ShopAllCoupouns,
-  // ShopPreviewPage,
+  ShopCreateEvents,
+  ShopAllEvents,
+  ShopAllCoupons,
+  ShopPreviewPage,
   // ShopAllOrders,
   // ShopOrderDetails,
   // ShopAllRefunds,
@@ -23,6 +23,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import Store from "./redux/store.js";
 import { loadSeller, loadUser } from "./redux/actions/user.js";
+import { getAllProducts } from "./redux/actions/product.js";
 import axios from 'axios';
 import { server } from './server.js';
 import ProtectedRoute from "./routes/ProtectedRoute.js"
@@ -43,8 +44,7 @@ const App = () => {
   useEffect(() => {
     Store.dispatch(loadUser());
     Store.dispatch(loadSeller());
-    // Store.dispatch(getAllProducts());
-    // Store.dispatch(getAllEvents());
+    Store.dispatch(getAllProducts());  // ← fetch all products on app startup
     // getStripeApiKey();
   }, []);
   if (userLoading || sellerLoading) {
@@ -116,7 +116,7 @@ const App = () => {
           }
         />
 
-         <Route path="/dashboard-products"
+        <Route path="/dashboard-products"
           element={
             <SellerProtectedRoute
             >
@@ -125,6 +125,36 @@ const App = () => {
           }
         />
 
+        <Route path="/dashboard-create-event"
+          element={
+            <SellerProtectedRoute
+            >
+              <ShopCreateEvents />
+            </SellerProtectedRoute>
+          }
+        />
+
+        <Route path="/dashboard-events"
+          element={
+            <SellerProtectedRoute
+            >
+              <ShopAllEvents />
+            </SellerProtectedRoute>
+          }
+        />
+
+        <Route path="/dashboard-coupons"
+          element={
+            <SellerProtectedRoute
+            >
+              <ShopAllCoupons />
+            </SellerProtectedRoute>
+          }
+        />
+
+        <Route path="/shop/preview/:id" element={<ShopPreviewPage />} />
+
+
 
       </Routes>
       <ToastContainer position="top-center" autoClose={3000} />
@@ -132,7 +162,7 @@ const App = () => {
   )
 
 
-  // )
+  // )  
 }
 
 export default App

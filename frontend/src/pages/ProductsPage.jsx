@@ -15,13 +15,12 @@ const ProductsPage = () => {
 
     useEffect(() => {
         if (categoryData === null) {
-            // const d = allProducts;
-            // setData(d);
-            const d = productData && productData.sort((a, b) => a.total_sell - b.total_sell)
+            // spread into a new array first — .sort() mutates in-place
+            // without this, the original productData export gets permanently reordered
+            const d = productData ? [...productData].sort((a, b) => a.total_sell - b.total_sell) : [];
             setData(d)
         } else {
-            const d = productData && productData.filter((i) => i.category === categoryData)
-            // allProducts && allProducts.filter((i) => i.category === categoryData);
+            const d = productData ? [...productData].filter((i) => i.category === categoryData) : [];
             setData(d);
         }
         //    window.scrollTo(0,0);
