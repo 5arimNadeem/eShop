@@ -28,6 +28,7 @@ import axios from 'axios';
 import { server } from './server.js';
 import ProtectedRoute from "./routes/ProtectedRoute.js"
 import SellerProtectedRoute from "./routes/SellerProtectedRoute.js"
+import { getAllEvents } from './redux/actions/event.js'
 
 const App = () => {
   const { loading: userLoading } = useSelector((state) => state.user);
@@ -44,7 +45,8 @@ const App = () => {
   useEffect(() => {
     Store.dispatch(loadUser());
     Store.dispatch(loadSeller());
-    Store.dispatch(getAllProducts());  // ← fetch all products on app startup
+    Store.dispatch(getAllProducts());
+    Store.dispatch(getAllEvents());
     // getStripeApiKey();
   }, []);
   if (userLoading || sellerLoading) {

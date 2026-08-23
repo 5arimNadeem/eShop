@@ -42,14 +42,14 @@ router.post("/create-event", isSeller, upload.array("images"), catchAsyncErrors(
     }
 }));
 
-//get all product 
+//get all events 
 
-router.get("/get-all-events/:id", catchAsyncErrors(async (req, res, next) => {
+router.get("/get-all-events", catchAsyncErrors(async (req, res, next) => {
     try {
         // dispatch({
         //     type: "getAllProductsShopRequest"
         // })
-        const events = await Event.find({ shopId: req.params.id });
+        const events = await Event.find();
 
         // dispatch({
         //     type:"getAllProductsShopSuccess",

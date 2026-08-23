@@ -1,0 +1,6 @@
+featureProducts are not showing 
+
+and bestdeals are not showing 
+
+as i click on the shopPreview page i am unable to see the shop detials or any thing there except the headings text on the page 
+$ sign there 

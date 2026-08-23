@@ -9,7 +9,7 @@ export const createevent = (d) => async (dispatch) => {
       type: "eventCreateRequest",
     });
 
-    const { data } = await axios.post(`${server}/event/create-event`, d, {withCredentials: true});
+    const { data } = await axios.post(`${server}/event/create-event`, d, { withCredentials: true });
     dispatch({
       type: "eventCreateSuccess",
       payload: data.event,
@@ -29,7 +29,7 @@ export const getAllEventsShop = (id) => async (dispatch) => {
       type: "getAlleventsShopRequest",
     });
 
-    const { data } = await axios.get(`${server}/event/get-all-events/${id}`,{withCredentials:true});
+    const { data } = await axios.get(`${server}/event/get-all-events/${id}`, { withCredentials: true });
     dispatch({
       type: "getAlleventsShopSuccess",
       payload: data.events,

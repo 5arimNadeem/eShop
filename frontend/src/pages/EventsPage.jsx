@@ -11,12 +11,10 @@ const EventsPage = () => {
             {/* {isLoading ? (
                 <Loader />
             ) : ( */}
-                <div>
-                    <Header activeHeading={4} />
-                    <main>
-                        <EventCard active={true}/>
-                    </main>
-                </div>
+            <div>
+                <Header activeHeading={4} />
+                <EventCard active={true} />
+            </div>
             {/* )} */}
         </>
     );

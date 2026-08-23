@@ -1,51 +1,82 @@
-import React from 'react'
-import styles from '../../styles/styles'
 import CountDown from "./Countdown.jsx";
+import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart } from "../../redux/actions/cart";
+import { toast } from "react-toastify";
+import { getImageUrl } from "../../utils/imageUtils";
 
-// const FALLBACK_IMAGE =
-//     "https://placehold.co/400x400/f3f4f6/9ca3af?text=No+Image";
+const EventCard = ({ active, data }) => {
+    const { cart } = useSelector((state) => state.cart);
+    const dispatch = useDispatch();
 
-const EventCard = ({active}) => {
-    // const imageUrl = data?.image_Url?.[0]?.url || data?.images?.[0]?.url
+    const addToCartHandler = (data) => {
+        const isItemExists = cart && cart.find((i) => i._id === data._id);
+        if (isItemExists) {
+            toast.error("Item already in cart!");
+        } else {
+            if (data.stock < 1) {
+                toast.error("Product stock limited!");
+            } else {
+                const cartData = { ...data, qty: 1 };
+                dispatch(addToCart(cartData));
+                toast.success("Item added to cart successfully!");
+            }
+        }
+    };
+
+    if (!data || !data.images || !Array.isArray(data.images) || data.images.length === 0) {
+        return null;
+    }
+
     return (
-        <div className={`w-full 800px:flex block bg-white rounded-lg ${active ? "unset" : "mb-12"} p-2 lg:800`}>
-            <div className="w-full lg-w[50%] m-auto">
-                <img src="https://m.media-amazon.com/images/I/31Vle5fVdaL.jpg"
-                    alt="iphone"
-                />
-            </div>
-
-            <div className="w-full lg:[w-50%] flex flex-col justify-center">
-                <h2 className={`${styles.productTitle}`}>
-                    Iphone 14pro max 8/256gb
-                </h2>
-                <p>
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Unde a error, voluptatum laborum veniam sed pariatur minima commodi quisquam iste ipsam magni maxime aperiam sint ipsa nostrum. Doloremque dignissimos nulla unde animi tenetur! Assumenda quam possimus nostrum eum libero commodi? Amet beatae doloremque voluptatum temporibus magni. Reiciendis aliquam earum laboriosam!
-                </p>
-
-                <div className="flex py-2 justify-between">
-                    <div className="flex">
-                        <h5 className="font-[500] text-[18px] text-[#d55] pr-3 line-through">
-
-                            1088$
-                        </h5>
-                        <h5 className='font-bold text-[20px] text-[#333] font-Roboto'>
-                            999$
-                        </h5>
-
-                    </div>
-
-                    <span className='
-                    pr-3 font-[400] text-[17px] text-[#44a55e]'>
-                        120 sold
-                    </span>
+        <div
+            className={`w-full block bg-gradient-to-br from-green-100 to-green-50 rounded-2xl shadow-lg ${active ? "" : "mb-12"
+                } lg:flex p-4 transition-transform duration-200 hover:scale-[1.02]`}
+        >
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl shadow-md p-2 flex items-center justify-center">
+                    <img
+                        src={getImageUrl(data.images[0])}
+                        alt={data.name}
+                        className="object-cover rounded-lg max-h-64 w-full"
+                    />
                 </div>
-
-                <CountDown />
             </div>
-
+            <div className="flex py-2 justify-between items-center">
+                <div className="flex items-end">
+                    <h5 className="font-semibold text-lg text-gray-400 pr-3 line-through">
+                        {data.originalPrice}$
+                    </h5>
+                    <h5 className="font-bold text-2xl text-green-700 font-Roboto">
+                        {data.discountPrice}$
+                    </h5>
+                </div>
+                <span className="pl-3 font-medium text-base text-green-600 bg-green-100 rounded-full px-3 py-1">
+                    {data.sold_out} sold
+                </span>
+            </div>
+            <div className="my-4">
+                <CountDown data={data} />
+            </div>
+            <div className="flex items-center gap-4 mt-2">
+                <Link to={`/product/${data._id}?isEvent=true`}>
+                    <button
+                        className="bg-green-600 hover:bg-green-700 transition-colors duration-150 text-white font-semibold py-2 px-6 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-green-400"
+                        type="button"
+                    >
+                        See Details
+                    </button>
+                </Link>
+                <button
+                    className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 transition-colors duration-150 text-white font-semibold py-2 px-6 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-green-400"
+                    type="button"
+                    onClick={() => addToCartHandler(data)}
+                >
+                    Add to cart
+                </button>
+            </div>
         </div>
-    )
-}
+    );
+};
 
-export default EventCard
+export default EventCard;

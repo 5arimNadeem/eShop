@@ -46,7 +46,7 @@ const ProductDetails = ({ data, isEvent }) => {
         } else {
             setClick(false);
         }
-    }, [data, wishlist]);
+    }, [data, wishlist, dispatch]);
 
     const incrementCount = () => {
         setCount(count + 1);
