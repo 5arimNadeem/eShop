@@ -33,6 +33,12 @@ Read this book when you are stuck. The bugs here are not embarrassments — they
 | 6 | [The Bubble That Swallowed the Click](#chapter-6-the-bubble-that-swallowed-the-click) | DOM / Event Bubbling | `ShopProfileData.jsx` |
 | 7 | [The Inverted Screen](#chapter-7-the-inverted-screen) | Logic Bug (UI) | `SellerActivationPage.jsx` |
 | 8 | [The Ghost in the Store](#chapter-8-the-ghost-in-the-store) | Redux / State | `store.js` + `reducers/product.js` |
+| 9 | [The Empty Shelf](#chapter-9-the-empty-shelf) | Redux / Dispatch | `App.jsx` |
+| 10 | [The Mutated Shelf](#chapter-10-the-mutated-shelf) | JS Mutation | `ProductsPage.jsx` |
+| 11 | [The Blank Product Page](#chapter-11-the-blank-product-page) | Redux / useEffect | `ProductDetails.jsx` |
+| 12 | [The Shape Mismatch](#chapter-12-the-shape-mismatch) | Data Shape | `ProductDetails.jsx` |
+| 13 | [The Commented-Out Events Page](#chapter-13-the-commented-out-events-page) | Dead Code / Guard | `EventsPage.jsx` + `Events.jsx` |
+| 14 | [The Missing Shop Events Route](#chapter-14-the-missing-shop-events-route) | Missing Route | `controller/event.js` + `AllEvents.jsx` |
 
 ---
 ---
@@ -772,3 +778,179 @@ images.map((image, index) => ...)
 > Normalize at the component boundary — as early as possible, before any logic uses the data.
 
 *Last updated: 2026-08-22*
+
+---
+---
+
+## Chapter 13: The Commented-Out Events Page
+
+**Date Encountered:** 2026-08-25
+**Symptom:** The Events page showed nothing at all (blank below the header). The Popular Events section on the homepage was also empty.
+
+### The Story
+
+This was two bugs in two files that produced the same visible symptom: *nothing renders*.
+
+**Bug A — `EventsPage.jsx` — The Commented-Out Redux Connection:**
+Somebody commented out *everything*: the `useSelector` import, the `isLoading` and `allEvents` destructuring, and the conditional rendering. What remained was a hardcoded `<EventCard active={true} />` with **no `data` prop at all**.
+
+`EventCard` has this guard at the very top:
+```js
+if (!data || !data.images || !Array.isArray(data.images) || data.images.length === 0) {
+    return null;
+}
+```
+Since `data` was `undefined`, the guard fired immediately — `null` was returned — and the entire page content vanished. No error, no warning. Just silence.
+
+**Bug B — `Events.jsx` — `allEvents.length` with No Guard:**
+The old `Events.jsx` had `allEvents.length !== 0` with no `?.` guard. On the very first render, before `getAllEvents()` resolves, `allEvents` is `[]` (from the reducer's `initialState`), so this was safe *in this case*. However, it only ever rendered `allEvents[0]` — a single card — not the full list. And because the DB had no events, even that one card rendered nothing.
+
+**The Underlying Data Fact:**
+`curl http://localhost:8000/api/v2/event/get-all-events` returned:
+```json
+{"success":true,"events":[],"message":"No events found for this shop"}
+```
+The backend route is perfectly functional. The DB is empty. So even with the code fixed, no events will show until one is created from the Seller dashboard.
+
+### Investigation Steps
+
+1. **Observe:** Events page: blank below Header. Popular Events section: blank on homepage.
+2. **Hypothesize (layered, working backwards from the symptom):**
+   - Why blank? → `EventCard` returned `null`
+   - Why did `EventCard` return `null`? → `data` prop was `undefined`
+   - Why was `data` undefined? → `EventsPage` passed no `data` prop
+   - Why no `data` prop? → Redux connection was commented out
+3. **Test:** `curl` the backend endpoint → returned `{"events":[]}` → backend is fine, data source is empty.
+4. **Verify the chain:** Action dispatched ✅ (`App.jsx` line 49) → Reducer registered ✅ (`store.js` line 17) → Reducer handles the case ✅ (`getAlleventsSuccess`) → **`EventsPage` consumed `undefined` instead of state** ❌
+5. **Conclude:** Two fixes — restore Redux connection in `EventsPage`, fix `Events.jsx` to map over all events.
+
+### Root Cause
+
+```jsx
+// EventsPage.jsx BEFORE — Redux connection commented out, data={undefined}
+// const { allEvents, isLoading } = useSelector((state) => state.event);
+return (
+    <div>
+        <Header activeHeading={4} />
+        <EventCard active={true} />  {/* ← no data prop! EventCard returns null */}
+    </div>
+);
+
+// Events.jsx BEFORE — only rendered first element
+allEvents.length !== 0 && (
+    <EventCard data={allEvents && allEvents[0]} />  // ← allEvents[0] only!
+)
+```
+
+### The Fix
+
+```jsx
+// EventsPage.jsx AFTER — Redux fully restored, maps all events
+const { allEvents, isLoading } = useSelector((state) => state.event);
+return isLoading ? <Loader /> : (
+    <div>
+        <Header activeHeading={4} />
+        {allEvents?.length > 0
+            ? allEvents.map((event) => <EventCard key={event._id} data={event} active={true} />)
+            : <h2>No Events Available!</h2>
+        }
+    </div>
+);
+
+// Events.jsx AFTER — maps full list with safe guard
+{allEvents && allEvents.length > 0
+    ? allEvents.map((event) => <EventCard key={event._id} data={event} active={false} />)
+    : <h4>No Events Available!</h4>
+}
+```
+
+### The Lesson
+
+> **Commented-out code is not "safe" code — it is broken code.** When you comment out the data source but leave the consumer (the component that uses the data) in place, the consumer silently receives `undefined`. No error is thrown at the comment. The crash happens silently, far away.
+
+> **When a component renders nothing, trace the `data` prop backwards:**
+> 1. What is the component rendering? `null` → a guard fired.
+> 2. What guard? Find every early `return null` in the component.
+> 3. What condition triggered it? Trace the condition.
+> 4. Where does that condition's value come from? Trace the prop.
+> 5. Who passed the prop? Look at the parent.
+
+> **`curl` is your fastest proof of innocence.** If `curl` returns `{"success":true,"events":[]}`, the backend is working and the DB is just empty. Don't spend time debugging a system that is functioning correctly. The problem is upstream (missing data) or downstream (broken consumer).
+
+> **Rendering collections: always `.map()`, never `[0]`.** If you render `allEvents[0]`, you render at most one item forever — and nothing if the array is empty. If you render `allEvents.map(...)`, you render all items and nothing if the array is empty, in the same pattern.
+
+*Last updated: 2026-08-25*
+
+---
+---
+
+## Chapter 14: The Missing Shop Events Route
+
+**Date Encountered:** 2026-08-25
+**Symptom:** The Seller Dashboard → All Events table was completely empty. No data rows appeared, despite events existing.
+
+### The Story
+
+This is the same pattern as Chapter 9 (The Empty Shelf) — a frontend action was calling a backend route that simply did not exist.
+
+`AllEvents.jsx` dispatches `getAllEventsShop(seller._id)`, which calls:
+```
+GET /api/v2/event/get-all-events/:id
+```
+But the backend `controller/event.js` only had:
+```
+GET /api/v2/event/get-all-events       ← global, no id
+```
+The parameterized `:id` variant was never written. Express returned a `404`, the Redux action dispatched the `getAlleventsShopFailed` action, `state.events` stayed `[]`, and the DataGrid rendered zero rows.
+
+### Investigation Steps
+
+1. **Observe:** `AllEvents.jsx` reads `state.event.events` (shop-specific). Dispatches `getAllEventsShop(seller._id)` which calls `/event/get-all-events/${id}`.
+2. **Hypothesize:** Does that backend route exist? `grep` found only `/get-all-events` with no `:id` param.
+3. **Test:** `curl http://localhost:8000/api/v2/event/get-all-events/someShopId` → `Cannot GET /api/v2/event/get-all-events/someShopId` → **404 confirmed**.
+4. **Verify model field:** `grep shop backend/model/event.js` → field is `shopId`. Query must be `{ shopId: req.params.id }`.
+5. **Conclude:** Add the missing route. Also fix the `useEffect` dependency array in `AllEvents.jsx`.
+
+### Root Cause
+
+```js
+// Frontend called this:
+GET /api/v2/event/get-all-events/:id
+
+// Backend only had this:
+router.get("/get-all-events", ...)   // ← no :id variant → 404
+```
+
+### The Fix
+
+```js
+// controller/event.js — add the missing shop-specific route
+router.get("/get-all-events/:id", catchAsyncErrors(async (req, res, next) => {
+    try {
+        const events = await Event.find({ shopId: req.params.id });
+        res.status(200).json({ success: true, events });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+}));
+
+// AllEvents.jsx — fix useEffect dependency array
+useEffect(() => {
+    dispatch(getAllEventsShop(seller._id));
+}, [dispatch, seller._id]);  // ← seller._id added
+```
+
+### The Lesson
+
+> **This is the recurring "Missing Route" pattern.** The fix for products (Chapter 9) was identical: the global route existed but the shop-specific parameterized route was never written.
+
+> **The debugging shortcut for empty DataGrid tables:**
+> 1. Find what `useSelector` key the component reads (`state.event.events`).
+> 2. Find what action dispatches data into it (`getAllEventsShop`).
+> 3. Find what URL that action calls (`/event/get-all-events/:id`).
+> 4. `curl` that URL directly — if you get `404`, the route doesn't exist.
+> 5. Add the route. Done.
+
+> **Always check the Event model's actual field names** before writing a Mongoose query. The field was `shopId` not `shop._id` or `shopID`. One wrong field name → empty array → silent failure.
+
+*Last updated: 2026-08-25*

@@ -45,7 +45,19 @@ router.post("/create-product", upload.array("images"), catchAsyncErrors(async (r
 }));
 
 
-//get all product 
+// get all products (global – used by FeaturedProduct, BestDeals, HomePage)
+router.get("/get-all-products", catchAsyncErrors(async (req, res, next) => {
+    try {
+        const products = await Product.find().sort({ createdAt: -1 });
+        res.status(200).json({
+            success: true,
+            products,
+        });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+}));
+
 
 router.get("/get-all-products-shop/:shopId", catchAsyncErrors(async (req, res, next) => {
     try {

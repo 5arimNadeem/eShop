@@ -30,7 +30,7 @@ const EventCard = ({ active, data }) => {
 
     return (
         <div
-            className={`w-full block bg-gradient-to-br from-green-100 to-green-50 rounded-2xl shadow-lg ${active ? "" : "mb-12"
+            className={`w-full block bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl shadow-lg ${active ? "" : "mb-12"
                 } lg:flex p-4 transition-transform duration-200 hover:scale-[1.02]`}
         >
             <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
@@ -47,11 +47,11 @@ const EventCard = ({ active, data }) => {
                     <h5 className="font-semibold text-lg text-gray-400 pr-3 line-through">
                         {data.originalPrice}$
                     </h5>
-                    <h5 className="font-bold text-2xl text-green-700 font-Roboto">
+                    <h5 className="font-bold text-2xl text-blue-700 font-Roboto">
                         {data.discountPrice}$
                     </h5>
                 </div>
-                <span className="pl-3 font-medium text-base text-green-600 bg-green-100 rounded-full px-3 py-1">
+                <span className="pl-3 font-medium text-base text-blue-600 bg-blue-100 rounded-full px-3 py-1">
                     {data.sold_out} sold
                 </span>
             </div>
@@ -61,14 +61,14 @@ const EventCard = ({ active, data }) => {
             <div className="flex items-center gap-4 mt-2">
                 <Link to={`/product/${data._id}?isEvent=true`}>
                     <button
-                        className="bg-green-600 hover:bg-green-700 transition-colors duration-150 text-white font-semibold py-2 px-6 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-green-400"
+                        className="bg-blue-600 hover:bg-blue-700 transition-colors duration-150 text-white font-semibold py-2 px-6 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-400"
                         type="button"
                     >
                         See Details
                     </button>
                 </Link>
                 <button
-                    className="bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 transition-colors duration-150 text-white font-semibold py-2 px-6 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition-colors duration-150 text-white font-semibold py-2 px-6 rounded-lg shadow focus:outline-none focus:ring-2 focus:ring-blue-400"
                     type="button"
                     onClick={() => addToCartHandler(data)}
                 >

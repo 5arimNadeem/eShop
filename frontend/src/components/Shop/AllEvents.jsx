@@ -16,7 +16,7 @@ const AllEvents = () => {
 
     useEffect(() => {
         dispatch(getAllEventsShop(seller._id));
-    }, [dispatch]);
+    }, [dispatch, seller._id]);
 
 
 

@@ -46,20 +46,27 @@ router.post("/create-event", isSeller, upload.array("images"), catchAsyncErrors(
 
 router.get("/get-all-events", catchAsyncErrors(async (req, res, next) => {
     try {
-        // dispatch({
-        //     type: "getAllProductsShopRequest"
-        // })
         const events = await Event.find();
-
-        // dispatch({
-        //     type:"getAllProductsShopSuccess",
-        //     payload:products,
-        // })
 
         res.status(200).json({
             success: true,
             events: events.length > 0 ? events : [],
             message: events.length > 0 ? undefined : "No events found for this shop",
+        });
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+}));
+
+// get all events of a specific shop
+
+router.get("/get-all-events/:id", catchAsyncErrors(async (req, res, next) => {
+    try {
+        const events = await Event.find({ shopId: req.params.id });
+
+        res.status(200).json({
+            success: true,
+            events,
         });
     } catch (error) {
         return next(new ErrorHandler(error.message, 500));

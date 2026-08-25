@@ -6,35 +6,29 @@ import EventCard from "./EventCard";
 const Events = () => {
     const { allEvents, isLoading } = useSelector((state) => state.event);
 
+    // Do not render while loading
+    if (isLoading) {
+        return null;
+    }
+
     return (
         <div>
-            {
-                !isLoading && (
-                    <div className={`${styles.section}`}>
-                        <div className={`${styles.heading}`}>
-                            <h1>Popular Events</h1>
-                        </div>
-
-                        <div className="w-full grid">
-                            {
-                                allEvents.length !== 0 && (
-                                    <EventCard data={allEvents && allEvents[0]} />
-                                )
-                            }
-                            <h4>{
-                                allEvents?.length === 0 && (
-                                    'No Events have!'
-                                )
-                            }
-
-                            </h4>
-                        </div>
-
-                    </div>
-                )
-            }
+            <div className={`${styles.section}`}>
+                <div className={`${styles.heading}`}>
+                    <h1>Popular Events</h1>
+                </div>
+                <div className="w-full grid">
+                    {allEvents && allEvents.length > 0 ? (
+                        allEvents.map((event) => (
+                            <EventCard key={event._id} data={event} active={false} />
+                        ))
+                    ) : (
+                        <h4 className="text-gray-500 text-center py-6">No Events Available!</h4>
+                    )}
+                </div>
+            </div>
         </div>
-    )
-}
+    );
+};
 
-export default Events
+export default Events;
