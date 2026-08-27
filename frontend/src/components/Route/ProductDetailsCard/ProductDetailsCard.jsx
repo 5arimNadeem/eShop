@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { AiFillHeart, AiOutlineHeart, AiOutlineMessage, AiOutlineShoppingCart } from 'react-icons/ai';
 import { RxCross1 } from 'react-icons/rx';
 import styles from '../../../styles/styles';
+import { getImageUrl } from '../../../utils/imageUtils';
 
 const FALLBACK_IMAGE =
     "https://placehold.co/400x400/f3f4f6/9ca3af?text=No+Image";
@@ -10,7 +11,17 @@ const ProductDetailsCard = ({ setOpen, data }) => {
     const [count, setCount] = useState(1);
     // const [select, setSelect] = useState(false);
     const [click, setClick] = useState(false);
-    const imageUrl = data?.image_Url?.[0]?.url || data?.images?.[0]?.url || FALLBACK_IMAGE;
+    // Normalize image: API = plain string, static = {url: '...'}
+    const rawImage = data?.images?.[0] || data?.image_Url?.[0];
+    const imageUrl = rawImage ? getImageUrl(rawImage) : FALLBACK_IMAGE;
+    // Normalize price fields: API uses discountPrice/originalPrice, static uses discount_price/price
+    const discountPrice = data?.discountPrice ?? data?.discount_price;
+    const originalPrice = data?.originalPrice ?? data?.price;
+    const soldOut = data?.sold_out ?? data?.total_sell ?? 0;
+
+    // Normalize shop avatar: API uses shop.avatar (plain string), static uses shop.shop_avatar.url
+    const shopAvatarRaw = data?.shop?.avatar || data?.shop?.shop_avatar;
+    const shopAvatarUrl = shopAvatarRaw ? getImageUrl(shopAvatarRaw) : FALLBACK_IMAGE;
 
     const handleMessageSubmit = () => { };
 
@@ -40,7 +51,7 @@ const ProductDetailsCard = ({ setOpen, data }) => {
                                     <img src={imageUrl} alt="" />
 
                                     <div className="flex">
-                                        <img src={data?.shop.shop_avatar.url} alt=""
+                                        <img src={shopAvatarUrl} alt=""
                                             className='w-[50px] h-[50px] rounded-full mr-2 object-contain'
                                         />
                                         <div>
@@ -60,7 +71,7 @@ const ProductDetailsCard = ({ setOpen, data }) => {
                                         </span>
                                     </div>
                                     <h5 className='text-[16px] text-[red] mt-5'>
-                                        ( {data.total_sell}) Sold out
+                                        ({soldOut}) Sold out
                                     </h5>
                                 </div>
 
@@ -72,10 +83,10 @@ const ProductDetailsCard = ({ setOpen, data }) => {
 
                                     <div className="flex pt-3">
                                         <h4 className={`${styles.productDiscountPrice}`}>
-                                            {data.discount_price}$
+                                            {discountPrice}$
                                         </h4>
                                         <h3 className={`${styles.price}`}>
-                                            {data.price ? data.price + "$" : null}
+                                            {originalPrice ? originalPrice + "$" : null}
                                         </h3>
                                     </div>
                                     <div className={`${styles.noramlFlex} mt-12 justify-between pr-3`}>

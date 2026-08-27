@@ -38,7 +38,8 @@ Read this book when you are stuck. The bugs here are not embarrassments — they
 | 11 | [The Blank Product Page](#chapter-11-the-blank-product-page) | Redux / useEffect | `ProductDetails.jsx` |
 | 12 | [The Shape Mismatch](#chapter-12-the-shape-mismatch) | Data Shape | `ProductDetails.jsx` |
 | 13 | [The Commented-Out Events Page](#chapter-13-the-commented-out-events-page) | Dead Code / Guard | `EventsPage.jsx` + `Events.jsx` |
-| 14 | [The Missing Shop Events Route](#chapter-14-the-missing-shop-events-route) | Missing Route | `controller/event.js` + `AllEvents.jsx` |
+| 14 | [The Missing Shop Events Route](#chapter-14-the-missing-shop-events-route) | Missing Route | `controller/event.js` |
+| 15 | [The Invisible Images](#chapter-15-the-invisible-images) | Data Shape | `ProductCard.jsx` + `ProductDetailsCard.jsx` |
 
 ---
 ---
@@ -954,3 +955,107 @@ useEffect(() => {
 > **Always check the Event model's actual field names** before writing a Mongoose query. The field was `shopId` not `shop._id` or `shopID`. One wrong field name → empty array → silent failure.
 
 *Last updated: 2026-08-25*
+
+---
+---
+
+## Chapter 15: The Invisible Images
+
+**Date Encountered:** 2026-08-27
+**Symptom:** Product images were invisible everywhere — `ProductCard`, `BestDeals`, `FeaturedProduct`, and the quick-view modal all showed a grey placeholder instead of the real image. Additionally the quick-view modal crashed when opened for an API product.
+
+### The Story
+
+This was a **data shape mismatch** — the same class of bug as Chapter 12, but hitting every single component that renders a product image.
+
+The app was written to support two sources:
+- **Static demo data** — images stored as `data.image_Url = [{ url: 'https://...' }]` (array of objects with a `.url` key)
+- **API data** — images stored as `data.images = ['filename.png']` (array of plain strings)
+
+But `ProductCard` and `ProductDetailsCard` both read `data?.images?.[0]?.url` — treating the API string as if it were an object with `.url`. A plain string has no `.url` property. The result was `undefined` → fallback placeholder shown everywhere.
+
+There was a **second, harder crash** inside `ProductDetailsCard`:
+```js
+// Line 50 — assumed static data shape
+data?.shop.shop_avatar.url
+```
+The API doesn't return `shop_avatar`. It returns `shop.avatar` — a plain filename string. So `shop_avatar` was `undefined`, accessing `.url` on `undefined` threw a `TypeError` and crashed the entire quick-view modal the moment it opened for a real API product.
+
+### Investigation Steps
+
+1. **Observe:** All product cards show the grey fallback placeholder. Quick-view modal crashes on open.
+2. **Hypothesize:** If every card fails, the bug is in the shared image resolution logic, not one card.
+3. **Test — inspect the API shape:**
+```bash
+curl http://localhost:8000/api/v2/product/get-all-products | python3 -c "
+import sys,json; d=json.load(sys.stdin); p=d['products'][0]
+print('images:', p.get('images'))
+print('shop keys:', list(p['shop'].keys()))
+print('shop avatar:', p['shop'].get('avatar'))
+print('shop_avatar:', p['shop'].get('shop_avatar'))
+"
+# Output:
+# images: ['1-1787373581310-242624965.png']   ← plain string, NOT {url:...}
+# shop avatar: 'Screenshot-...-630146593.png' ← plain string
+# shop_avatar: None                           ← does NOT exist
+```
+4. **Simulate what the code does:**
+```js
+node -e "
+const data = { images: ['filename.png'] };
+console.log(data?.images?.[0]?.url); // undefined — string has no .url
+"
+```
+5. **Conclude:** The `.url` accessor was written for static data objects. API returns raw strings. Use `getImageUrl()` which already handles both cases correctly.
+
+### Root Cause
+
+```js
+// BEFORE — assumed images[0] is an object {url: '...'}
+const imageUrl = data?.image_Url?.[0]?.url  // works for static data
+               || data?.images?.[0]?.url    // ← BROKEN for API (string has no .url)
+               || FALLBACK_IMAGE;           // always hits fallback
+
+// BEFORE — assumed shop has shop_avatar.url
+data?.shop.shop_avatar.url  // ← CRASH: shop_avatar is undefined
+```
+
+### The Fix
+
+```js
+// AFTER — normalize using getImageUrl() which handles both plain strings and {url} objects
+const rawImage = data?.images?.[0] || data?.image_Url?.[0];
+const imageUrl = rawImage ? getImageUrl(rawImage) : FALLBACK_IMAGE;
+
+// getImageUrl() already handles:
+// - plain string 'filename.png'     → 'http://localhost:8000/filename.png'
+// - plain string 'https://...'      → returned as-is (Cloudinary etc)
+// - object { url: 'https://...' }   → extracts .url
+
+// AFTER — normalize shop avatar the same way
+const shopAvatarRaw = data?.shop?.avatar || data?.shop?.shop_avatar;
+const shopAvatarUrl = shopAvatarRaw ? getImageUrl(shopAvatarRaw) : FALLBACK_IMAGE;
+```
+
+### Files Fixed
+
+| File | Bug | Fix |
+|------|-----|-----|
+| `ProductCard.jsx` | `images[0].url` on plain string | `getImageUrl(images[0])` |
+| `ProductDetailsCard.jsx` | Same + `shop_avatar.url` crash | `getImageUrl` + `shop.avatar` fallback |
+| `ProductDetailsCard.jsx` | `data.discount_price` / `data.total_sell` hard-coded | Normalized `discountPrice`, `soldOut` locals |
+
+### The Lesson
+
+> **The `.url` accessor trap.** When your static data stores images as `[{ url: '...' }]` and your API stores them as `['filename']`, the code `data.images[0].url` silently returns `undefined` for API data. No error is thrown — just `undefined` — and the fallback image takes over. Every component that renders images needs to go through a shared normalizer.
+
+> **`getImageUrl()` is your single source of truth for image URLs.** It already handles plain strings (local filenames), full https URLs (Cloudinary), and `{url}` objects. Import it everywhere instead of writing inline logic.
+
+> **Before accessing a nested property, confirm it exists in your actual API response.** `curl` the API, print the exact keys. `shop_avatar` felt obvious but `avatar` was the real key. One wrong assumption → one crash.
+
+> **The debugging shortcut for invisible images:**
+> 1. `curl` the API, inspect the raw `images` field.
+> 2. `node -e` simulate what your code does with that value.
+> 3. If the result is `undefined`, the shape doesn't match — use `getImageUrl()` instead of inline `.url` access.
+
+*Last updated: 2026-08-27*

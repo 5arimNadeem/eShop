@@ -9,6 +9,7 @@ import {
     AiOutlineShoppingCart,
 } from "react-icons/ai";
 import ProductDetailsCard from "../ProductDetailsCard/ProductDetailsCard.jsx";
+import { getImageUrl } from "../../../utils/imageUtils";
 
 const FALLBACK_IMAGE =
     "https://placehold.co/400x400/f3f4f6/9ca3af?text=No+Image";
@@ -19,9 +20,11 @@ const ProductCard = ({ data }) => {
 
     const product_name = (data?.name || "").replace(/\s+/g, "-");
 
-    // static data uses price/discount_price/rating/total_sell,
-    // the API uses originalPrice/discountPrice/ratings/sold_out
-    const imageUrl = data?.image_Url?.[0]?.url || data?.images?.[0]?.url || FALLBACK_IMAGE;
+    // Normalize image URL:
+    // - API products:    data.images = ['filename.png']  (array of plain strings)
+    // - Static products: data.image_Url = [{url: 'https://...'}] (array of objects)
+    const rawImage = data?.images?.[0] || data?.image_Url?.[0];
+    const imageUrl = rawImage ? getImageUrl(rawImage) : FALLBACK_IMAGE;
     const originalPrice = data?.originalPrice ?? data?.price;
     const discountPrice = data?.discountPrice ?? data?.discount_price;
     const rating = data?.ratings ?? data?.rating ?? 0;

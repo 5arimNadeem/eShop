@@ -83,7 +83,7 @@ export const getAllEvents = () => async (dispatch) => {
   } catch (error) {
     dispatch({
       type: "getAlleventsFailed",
-      payload: error.response.data.message,
+      payload: error?.response?.data?.message || error.message,
     });
   }
 };
