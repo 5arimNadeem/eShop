@@ -1,3 +1,1 @@
-i am only seeing the products that are in my shop on the frontend 
-
-and i am unable to see the pictures of the products 
+As i click on the product image i redirect to the product details page but the data is not loaded 

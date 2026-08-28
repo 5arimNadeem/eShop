@@ -1,49 +1,43 @@
-import React, { useEffect, useState } from 'react'
-import Header from '../components/Layout/Header'
-import Footer from '../components/Layout/Footer'
-import ProductDetails from '../components/Products/ProductDetails.jsx'
-import SuggestedProduct from '../components/Products/SuggestedProduct.jsx'
-import { useParams } from 'react-router-dom'
-import { productData } from '../static/data.jsx'
-import { useSelector } from 'react-redux'
+import React, { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import Footer from "../components/Layout/Footer";
+import Header from "../components/Layout/Header";
+import ProductDetails from "../components/Products/ProductDetails.jsx";
+import SuggestedProduct from "../components/Products/SuggestedProduct.jsx";
+import { useSelector } from "react-redux";
 
 const ProductDetailsPage = () => {
-    // allProducts = global list, filled by getAllProducts() dispatched in App.jsx
-    // products   = shop-specific list, only filled on shop pages — WRONG key for here
-    const { allProducts } = useSelector((state) => state.products)
-    const { name } = useParams()
-    const [data, setData] = useState(null)
-    const productName = name.replace(/-/g, " ");
+    const { allProducts } = useSelector((state) => state.products);
+    const { allEvents } = useSelector((state) => state.event);
+    const { id } = useParams();
+    const [data, setData] = useState(null);
+    const [searchParams] = useSearchParams();
+    const eventData = searchParams.get("isEvent");
 
     useEffect(() => {
-        // STEP 1: Search Redux (real API products from the database)
-        const fromApi = allProducts?.find((i) => i.name === productName);
-
-        // STEP 2: Fallback to static data (for demo products used in dev)
-        const fromStatic = productData?.find((i) => i.name === productName);
-
-        // Use whichever one found the product
-        setData(fromApi || fromStatic || null);
-
-        console.log("[DEBUG] productName:", productName);
-        console.log("[DEBUG] found in API:", !!fromApi, "| found in static:", !!fromStatic);
-
-    }, [allProducts, productName]); // dependency array — re-runs only when these change
+        if (eventData !== null) {
+            const data = allEvents && allEvents.find((i) => i._id === id);
+            setData(data);
+        } else {
+            const data = allProducts && allProducts.find((i) => i._id === id);
+            setData(data);
+        }
+    }, [allProducts, allEvents]);
 
     return (
         <div>
             <Header />
-            <main>
-                <ProductDetails data={data} />
-            </main>
+            <ProductDetails data={data} isEvent={eventData !== null} />
             {
-                data && <SuggestedProduct data={data} />
+                !eventData && (
+                    <>
+                        {data && <SuggestedProduct data={data} />}
+                    </>
+                )
             }
-            <footer className='mt-2'>
-                <Footer />
-            </footer>
+            <Footer />
         </div>
-    )
-}
+    );
+};
 
-export default ProductDetailsPage
+export default ProductDetailsPage;

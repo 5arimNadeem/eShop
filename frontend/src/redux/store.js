@@ -10,11 +10,11 @@ import { eventReducer } from "./reducers/event";
 const Store = configureStore({
   reducer: {
     user: userReducer,
-    cart: cartReducer,
-    wishlist: wishlistReducer,
     seller: sellerReducer,
     products: productReducer,
     event: eventReducer,
+    cart: cartReducer,
+    wishlist: wishlistReducer,
     // order: orderReducer
   },
 });
