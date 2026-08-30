@@ -64,23 +64,3 @@ export const userReducer = createReducer(initialState, (builder) => {
             state.error = null;
         });
 });
-
-// export const userReducer = createReducer(initialState, {
-//     LoadUserRequests: (state) => {
-//         state.loading = true
-//     },
-//     LoadUserRequests: (state, actions) => {
-//         /* eslint eqeqeq: "off", curly: "error" */
-//         state.isAuthenticated = true;
-//         state.loading = false;
-//         state.user = actions.payload;
-//     },
-//     LoadUserFail: (state, actions) => {
-//         state.loading = false;
-//         state.error = actions.payload;
-//         state.isAuthenticated = false;
-//     },
-//     clearErrors: (state) => {
-//         state.error = null
-//     }
-// })

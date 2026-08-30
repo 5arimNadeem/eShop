@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { ActivationPage, BestSellingPage, EventsPage, FAQPage, HomePage, LoginPage, ProductsPage, SignupPage, CheckoutPage, PaymentPage, OrderSuccessPage, ProductDetailsPage, ProfilePage, ShopCreatePage, SellerActivationPage, ShopLoginPage } from './Routes.js'
@@ -29,10 +29,20 @@ import { server } from './server.js';
 import ProtectedRoute from "./routes/ProtectedRoute.js"
 import SellerProtectedRoute from "./routes/SellerProtectedRoute.js"
 import { getAllEvents } from './redux/actions/event.js'
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+
 
 const App = () => {
   const { loading: userLoading } = useSelector((state) => state.user);
   const { loading: sellerLoading } = useSelector((state) => state.seller);
+
+  const [stripeApiKey, setStripeApiKey] = useState("");
+
+  async function getStripeApiKey() {
+    const { data } = await axios.get(`${server}/payment/stripeapikey`);
+    setStripeApiKey(data.stripeApiKey);
+  }
 
   useEffect(() => {
     axios.get(`${server}/user/get-user`, { withCredentials: true }).then((res) => {
@@ -47,7 +57,7 @@ const App = () => {
     Store.dispatch(loadSeller());
     Store.dispatch(getAllProducts());
     Store.dispatch(getAllEvents());
-    // getStripeApiKey();
+    getStripeApiKey();
   }, []);
   if (userLoading || sellerLoading) {
     return <Loader />;
@@ -55,6 +65,20 @@ const App = () => {
 
   return (
     <BrowserRouter>
+      {stripeApiKey && (
+        <Elements stripe={loadStripe(stripeApiKey)}>
+          <Routes>
+            <Route
+              path="/payment"
+              element={
+                <ProtectedRoute>
+                  <PaymentPage />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Elements>
+      )}
       <Routes>
         <Route path='/' element={<HomePage />} />
         <Route path='/login' element={<LoginPage />} />

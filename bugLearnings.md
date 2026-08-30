@@ -40,6 +40,8 @@ Read this book when you are stuck. The bugs here are not embarrassments — they
 | 13 | [The Commented-Out Events Page](#chapter-13-the-commented-out-events-page) | Dead Code / Guard | `EventsPage.jsx` + `Events.jsx` |
 | 14 | [The Missing Shop Events Route](#chapter-14-the-missing-shop-events-route) | Missing Route | `controller/event.js` |
 | 15 | [The Invisible Images](#chapter-15-the-invisible-images) | Data Shape | `ProductCard.jsx` + `ProductDetailsCard.jsx` |
+| 16 | [The Wrong Key in the Lock](#chapter-16-the-wrong-key-in-the-lock) | Route Param Mismatch | `ProductDetailsPage.jsx` |
+| 17 | [The Ghost Callback](#chapter-17-the-ghost-callback) | Mongoose Async Hook | `model/user.js` |
 
 ---
 ---
@@ -1059,3 +1061,171 @@ const shopAvatarUrl = shopAvatarRaw ? getImageUrl(shopAvatarRaw) : FALLBACK_IMAG
 > 3. If the result is `undefined`, the shape doesn't match — use `getImageUrl()` instead of inline `.url` access.
 
 *Last updated: 2026-08-27*
+
+---
+---
+
+## Chapter 16: The Wrong Key in the Lock
+
+**Date Encountered:** 2026-08-28
+**Symptom:** Clicking any product card navigated to `/product/Product-Name`. Header and footer appeared, but the product content was completely blank.
+
+### The Story
+
+The route was defined as `/product/:name`. `ProductCard` built the link using the slugified product name:
+```js
+const product_name = data.name.replace(/\s+/g, "-");
+<Link to={`/product/${product_name}`} />
+```
+So the URL became `/product/Sarim-Nadeem`.
+
+But `ProductDetailsPage` read the route param as `id` and searched:
+```js
+const { id } = useParams();
+allProducts.find((i) => i._id === id)
+```
+It was comparing a MongoDB ObjectId (`6a83ba9860a1533e09a54df3`) to a name slug (`Sarim-Nadeem`). They can **never** match. `find()` returns `undefined`. `data` is always `null`. `ProductDetails` renders `{data ? (...) : null}` — null wins.
+
+No error is thrown anywhere. The page mounts, header and footer render, and the product block silently shows nothing.
+
+### Investigation Steps
+
+1. **Observe:** Header/footer render, product content blank. This is the "conditional render returns null" signature (same as Chapter 11).
+2. **Hypothesize:** `data` prop passed to `ProductDetails` is null. Trace upward: where does `data` come from?
+3. **Read `ProductDetailsPage`:** `data` is set by `allProducts.find(i => i._id === id)`. If this returns `undefined`, `data` stays `null`.
+4. **Read the route in `App.jsx`:** `path="/product/:name"` — the param is named `name`, not `id`.
+5. **Read `ProductCard`:** Link is `/product/${data.name.replace(...)}` — the URL carries the **name**, not the `_id`.
+6. **Conclude:** The param name and the lookup key are both wrong. `useParams()` should destructure `name`. The `find()` should match by slugified `i.name`, not by `i._id`.
+
+### Root Cause
+
+```
+URL in browser:        /product/Sarim-Nadeem
+Route parameter name:  :name
+useParams() extracts:  { name: "Sarim-Nadeem" }
+Code does:             const { id } = useParams()  // id = undefined!
+                       allProducts.find(i => i._id === undefined)  // never matches
+```
+
+### The Fix
+
+```js
+// BEFORE
+const { id } = useParams();
+allProducts.find((i) => i._id === id)  // ← wrong key AND wrong field
+
+// AFTER
+const { name } = useParams();  // match the :name route param
+allProducts.find(
+    (i) => i.name.replace(/\s+/g, "-") === name  // match by slugified name
+)
+```
+
+### The Lesson
+
+> **The route param name, the `useParams()` destructure key, and the lookup field must form a matching triple.** If any one of the three is wrong, the lookup silently returns `undefined`. Draw the chain:
+> ```
+> Route:        /product/:name
+> useParams:    const { name } = useParams()
+> Link builds:  /product/${product.name.replace(/ /g, "-")}
+> Find:         allProducts.find(i => i.name.replace(/ /g, "-") === name)
+> ```
+> All four lines must use the same value — the name slug.
+
+> **"Header and footer show, product content is blank"** is the same signature as Chapter 11. It always means a conditional render returned null because `data` is null/undefined. The question is always: what was supposed to set `data`, and why didn't it?
+
+> **The `useParams()` key must exactly match the route param name.** `path="/product/:name"` + `const { id } = useParams()` → `id` is silently `undefined`. React Router does not warn you. The variable is just `undefined`.
+
+*Last updated: 2026-08-28*
+
+---
+---
+
+## Chapter 17: The Ghost Callback
+
+**Date Encountered:** 2026-08-30
+**Symptom:** Adding or deleting an address always returned `{"success":false,"message":"next is not a function"}`. The frontend showed nothing — no toast, just silence.
+
+### The Story
+
+The address route (`PUT /update-user-addresses`) called `user.save()` after pushing the new address to `user.addresses`. This triggered Mongoose's `pre('save')` hook on the User model:
+
+```js
+// BROKEN
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) {
+        return next();  // ← CRASH
+    }
+    this.password = await bcrypt.hash(this.password, 10);
+});
+```
+
+In **Mongoose v6+**, when a pre-save hook is declared as an `async function`, Mongoose does **NOT** pass `next` as an argument. It simply awaits the returned promise. So `next` in the function signature is `undefined`.
+
+Since the address update doesn't touch the password, `!this.isModified("password")` is always `true`. The code immediately reaches `return next()` — which is `return undefined()` — throwing `TypeError: next is not a function`.
+
+This error propagated through `catchAsyncErrors → catch(next) → Express error handler`, which serialized the error message as `"next is not a function"` into the JSON response.
+
+### Investigation Steps
+
+1. **Observe:** Network tab shows `{"success":false,"message":"next is not a function"}` from `PUT /update-user-addresses`.
+2. **Confirm route exists:** The route is present in `controller/user.js` at line 255 — not a 404.
+3. **Trace the error message:** `"next is not a function"` = a `TypeError` thrown somewhere in the call stack. Not a custom `ErrorHandler`. Something tried to call `next` as a function when it was `undefined`.
+4. **Find all `next()` calls in the request path:**
+   - `isAuthenticated` middleware — uses `catchAsyncErrors`, fine.
+   - Route handler — uses `catchAsyncError`, fine.
+   - `user.save()` → triggers `pre('save')` hook.
+5. **Read the pre-save hook:** Declared `async function (next)`. In Mongoose v6+, async hooks don't receive `next`. `next = undefined`. `return next()` = `TypeError`.
+6. **Conclude:** Remove `next` from the async hook signature. Use `return` to early-exit.
+
+### Root Cause
+
+```js
+// Mongoose v6+ does NOT pass 'next' to async pre hooks
+// The parameter is silently undefined
+userSchema.pre("save", async function (next) {  // next = undefined !
+    if (!this.isModified("password")) {
+        return next();  // TypeError: next is not a function
+    }
+});
+```
+
+### The Fix
+
+```js
+// AFTER — async hooks resolve via the returned promise, no next() needed
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) {
+        return;  // just return — Mongoose sees resolved promise, continues
+    }
+    this.password = await bcrypt.hash(this.password, 10);
+});
+```
+
+### The Lesson
+
+> **Mongoose async pre hooks and `next` don't mix.** In Mongoose v6+, if your pre hook is an `async function`, do NOT accept `next` as a parameter and do NOT call `next()`. Mongoose awaits the returned promise. Just `return` to exit early. Mixing async + next() = `next is undefined`.
+
+> **`"next is not a function"` in an Express response = a `TypeError` from within the middleware chain.** It's not a custom error — it means somewhere, code called `someVar()` where `someVar` was `undefined`. Trace every call that happens during the request, including ORM hooks triggered by DB operations.
+
+> **DB lifecycle hooks (`pre('save')`, `pre('find')`, etc.) run during route handling.** A bug in a Mongoose pre-hook will surface as an error in whatever route called `.save()`, `.find()`, etc. Don't just debug the route — debug everything the route triggers.
+
+> **The two Mongoose pre hook patterns (choose ONE):**
+> ```js
+> // Pattern 1 — callback style (old, works in all versions)
+> schema.pre("save", function (next) {
+>     if (!this.isModified("password")) return next();
+>     bcrypt.hash(this.password, 10).then(hash => {
+>         this.password = hash;
+>         next();
+>     });
+> });
+>
+> // Pattern 2 — async style (Mongoose v5.11+, cleaner)
+> schema.pre("save", async function () {
+>     if (!this.isModified("password")) return;  // no next()
+>     this.password = await bcrypt.hash(this.password, 10);
+> });
+> ```
+
+*Last updated: 2026-08-30*

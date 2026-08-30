@@ -9,20 +9,24 @@ import { useSelector } from "react-redux";
 const ProductDetailsPage = () => {
     const { allProducts } = useSelector((state) => state.products);
     const { allEvents } = useSelector((state) => state.event);
-    const { id } = useParams();
+    const { name } = useParams();
     const [data, setData] = useState(null);
     const [searchParams] = useSearchParams();
     const eventData = searchParams.get("isEvent");
 
     useEffect(() => {
         if (eventData !== null) {
-            const data = allEvents && allEvents.find((i) => i._id === id);
-            setData(data);
+            // EventCard links by _id (?isEvent=true)
+            const d = allEvents && allEvents.find((i) => i._id === name);
+            setData(d);
         } else {
-            const data = allProducts && allProducts.find((i) => i._id === id);
-            setData(data);
+            // ProductCard links by slugified name: name.replace(/\s+/g, "-")
+            const d = allProducts && allProducts.find(
+                (i) => i.name.replace(/\s+/g, "-") === name
+            );
+            setData(d);
         }
-    }, [allProducts, allEvents]);
+    }, [allProducts, allEvents, name]);
 
     return (
         <div>

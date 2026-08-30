@@ -48,13 +48,13 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving to database
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
     if (!this.isModified("password")) {
-        return next();
+        return; // async hooks resolve via promise, never call next()
     }
-
     this.password = await bcrypt.hash(this.password, 10);
 });
+
 
 // // Generate JWT token for authentication
 userSchema.methods.getJwtToken = function () {
