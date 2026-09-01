@@ -2,3 +2,4 @@
 # debug config — keeps your logged-in session between debug runs.
 .vscode/.chrome-profile/
 /.claude/.claude/
+backend/config/.env
