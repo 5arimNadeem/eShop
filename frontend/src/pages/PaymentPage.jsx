@@ -1,6 +1,20 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import styles from "../../styles/styles";
+import { useEffect } from "react";
+import {
+  CardNumberElement,
+  CardCvcElement,
+  CardExpiryElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+// import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { useSelector } from "react-redux";
+import axios from "axios";
+import { server } from "../../server";
+import { toast } from "react-toastify";
+
 
 /* ── inject keyframes once ── */
 const sheet = document.createElement('style');
@@ -205,6 +219,8 @@ const style = {
 
 const PaymentPage = () => {
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
   const { cart } = useSelector((state) => state.cart);
 
   const [method, setMethod] = useState('card');
@@ -226,14 +242,84 @@ const PaymentPage = () => {
     setForm((p) => ({ ...p, [name]: v }));
   };
 
-  const handlePay = (e) => {
+  const handlePay = async (paymentInfo) => {
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    order.paymentInfo = {
+      id: paymentInfo.payer_id,
+      status: "succeeded",
+      type: "Paypal",
+    };
+
+    await axios
+      .post(`${server}/order/create-order`, order, config)
+      .then((res) => {
+        setOpen(false);
+        navigate("/order/success");
+        toast.success("Order successful!");
+        localStorage.setItem("cartItems", JSON.stringify([]));
+        localStorage.setItem("latestOrder", JSON.stringify([]));
+        window.location.reload();
+      });
+  };
+
+  const paymentData = {
+    amount: Math.round(orderData?.totalPrice * 100),
+  };
+
+  const paymentHandler = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    // Simulate async payment processing
-    setTimeout(() => {
-      setLoading(false);
-      navigate('/order/success/new');
-    }, 1800);
+    try {
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+
+      const { data } = await axios.post(
+        `${server}/payment/process`,
+        paymentData,
+        config
+      );
+
+      const client_secret = data.client_secret;
+
+      if (!stripe || !elements) return;
+      const result = await stripe.confirmCardPayment(client_secret, {
+        payment_method: {
+          card: elements.getElement(CardNumberElement),
+        },
+      });
+
+      if (result.error) {
+        toast.error(result.error.message);
+      } else {
+        if (result.paymentIntent.status === "succeeded") {
+          order.paymentInfo = {
+            id: result.paymentIntent.id,
+            status: result.paymentIntent.status,
+            type: "Credit Card",
+          };
+
+          await axios
+            .post(`${server}/order/create-order`, order, config)
+            .then((res) => {
+              setOpen(false);
+              navigate("/order/success");
+              toast.success("Order successful!");
+              localStorage.setItem("cartItems", JSON.stringify([]));
+              localStorage.setItem("latestOrder", JSON.stringify([]));
+              window.location.reload();
+            });
+        }
+      }
+    } catch (error) {
+      toast.error(error);
+    }
   };
 
   const displayCard = form.cardNumber || '•••• •••• •••• ••••';
@@ -241,174 +327,185 @@ const PaymentPage = () => {
   const displayName = form.name || 'YOUR NAME';
 
   return (
-    <div style={style.page}>
-      <div style={{ ...style.grid, gridTemplateColumns: window.innerWidth < 700 ? '1fr' : '1fr 340px' }}>
+    <>
+      <Header />
+      <br />
+      <br />
+      <div style={style.page}>
+        <div style={{ ...style.grid, gridTemplateColumns: window.innerWidth < 700 ? '1fr' : '1fr 340px' }}>
 
-        {/* ── Left: Form ── */}
-        <div style={style.card}>
-          <h1 style={style.pageTitle}>Secure Checkout</h1>
-
-          {/* Payment method tabs */}
-          <p style={style.sectionTitle}>Payment Method</p>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
-            {['card', 'paypal'].map((m) => (
-              <button key={m} style={style.methodTab(method === m)} onClick={() => setMethod(m)}>
-                {m === 'card' ? '💳 Card' : '🅿 PayPal'}
-              </button>
-            ))}
-          </div>
-
-          {method === 'card' ? (
-            <form onSubmit={handlePay} autoComplete="off">
-              {/* Live card preview */}
-              <div style={style.cardChip}>
-                <div style={style.chipCircles} />
-                <div style={style.chipCircles2} />
-                <div style={{ fontSize: '11px', opacity: .6, marginBottom: '12px', letterSpacing: '1px' }}>CREDIT CARD</div>
-                <div style={style.cardNum}>{displayCard}</div>
-                <div style={style.cardMeta}>
-                  <span>{displayName.toUpperCase()}</span>
-                  <span>{displayExpiry}</span>
-                </div>
-              </div>
-
-              <p style={{ ...style.sectionTitle, marginBottom: '18px' }}>Card Details</p>
-
-              <div style={style.fieldWrap}>
-                <label style={style.label} htmlFor="name">Cardholder Name</label>
-                <input id="name" name="name" className="pay-input" placeholder="John Doe"
-                  style={style.input} value={form.name} onChange={handleChange} required />
-              </div>
-
-              <div style={style.fieldWrap}>
-                <label style={style.label} htmlFor="cardNumber">Card Number</label>
-                <input id="cardNumber" name="cardNumber" className="pay-input" placeholder="1234 5678 9012 3456"
-                  style={style.input} value={form.cardNumber} onChange={handleChange} required />
-              </div>
-
-              <div style={{ ...style.row, ...style.fieldWrap }}>
-                <div>
-                  <label style={style.label} htmlFor="expiry">Expiry</label>
-                  <input id="expiry" name="expiry" className="pay-input" placeholder="MM/YY"
-                    style={style.input} value={form.expiry} onChange={handleChange} required />
-                </div>
-                <div>
-                  <label style={style.label} htmlFor="cvv">CVV</label>
-                  <input id="cvv" name="cvv" type="password" className="pay-input" placeholder="•••"
-                    style={style.input} value={form.cvv} onChange={handleChange} required />
-                </div>
-              </div>
-
-              <div style={style.fieldWrap}>
-                <label style={style.label} htmlFor="email">Email for Receipt</label>
-                <input id="email" name="email" type="email" className="pay-input" placeholder="you@example.com"
-                  style={style.input} value={form.email} onChange={handleChange} required />
-              </div>
-
-              <button
-                type="submit"
-                style={{ ...style.payBtn, background: loading ? '#334155' : '#0f172a' }}
-                onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#1e293b')}
-                onMouseLeave={(e) => !loading && (e.currentTarget.style.background = '#0f172a')}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span style={{
-                      width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)',
-                      borderTop: '2px solid #fff', borderRadius: '50%',
-                      display: 'inline-block',
-                      animation: 'spin 0.8s linear infinite',
-                    }} />
-                    Processing…
-                  </>
-                ) : (
-                  <>🔒 Pay ${total.toFixed(2)}</>
-                )}
-              </button>
-
-              <div style={style.badge}>
-                <span>🔐</span> 256-bit SSL encrypted · PCI DSS compliant
-              </div>
-            </form>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🅿</div>
-              <p style={{ fontWeight: '600', color: '#0f172a', marginBottom: '6px' }}>Pay with PayPal</p>
-              <p style={{ fontSize: '14px' }}>You'll be redirected to PayPal to complete your payment.</p>
-              <button
-                style={{ ...style.payBtn, marginTop: '28px' }}
-                onClick={() => navigate('/order/success/new')}
-              >
-                Continue to PayPal →
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Right: Order Summary ── */}
-        <div>
+          {/* ── Left: Form ── */}
           <div style={style.card}>
-            <p style={style.sectionTitle}>Order Summary</p>
+            <h1 style={style.pageTitle}>Secure Checkout</h1>
 
-            {cart.length === 0 ? (
-              <p style={{ color: '#94a3b8', fontSize: '14px' }}>Your cart is empty.</p>
-            ) : (
-              cart.map((item) => (
-                <div key={item._id} style={{ display: 'flex', gap: '12px', marginBottom: '14px', alignItems: 'center' }}>
-                  <div style={{
-                    width: '44px', height: '44px', borderRadius: '10px',
-                    background: '#f1f5f9', flexShrink: 0, overflow: 'hidden',
-                  }}>
-                    {item.images?.[0] && (
-                      <img src={item.images[0]?.url || item.images[0]} alt={item.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    )}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {item.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>Qty {item.qty}</div>
-                  </div>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', flexShrink: 0 }}>
-                    ${(item.discountPrice * item.qty).toFixed(2)}
+            {/* Payment method tabs */}
+            <p style={style.sectionTitle}>Payment Method</p>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+              {['card', 'paypal'].map((m) => (
+                <button key={m} style={style.methodTab(method === m)} onClick={() => setMethod(m)}>
+                  {m === 'card' ? '💳 Card' : '🅿 PayPal'}
+                </button>
+              ))}
+            </div>
+
+            {method === 'card' ? (
+              <form onSubmit={handlePay} autoComplete="off">
+                {/* Live card preview */}
+                <div style={style.cardChip}>
+                  <div style={style.chipCircles} />
+                  <div style={style.chipCircles2} />
+                  <div style={{ fontSize: '11px', opacity: .6, marginBottom: '12px', letterSpacing: '1px' }}>CREDIT CARD</div>
+                  <div style={style.cardNum}>{displayCard}</div>
+                  <div style={style.cardMeta}>
+                    <span>{displayName.toUpperCase()}</span>
+                    <span>{displayExpiry}</span>
                   </div>
                 </div>
-              ))
+
+                <p style={{ ...style.sectionTitle, marginBottom: '18px' }}>Card Details</p>
+
+                <div style={style.fieldWrap}>
+                  <label style={style.label} htmlFor="name">Cardholder Name</label>
+                  <input id="name" name="name" className="pay-input" placeholder="John Doe"
+                    style={style.input} value={form.name} onChange={handleChange} required />
+                </div>
+
+                <div style={style.fieldWrap}>
+                  <label style={style.label} htmlFor="cardNumber">Card Number</label>
+                  <input id="cardNumber" name="cardNumber" className="pay-input" placeholder="1234 5678 9012 3456"
+                    style={style.input} value={form.cardNumber} onChange={handleChange} required />
+                </div>
+
+                <div style={{ ...style.row, ...style.fieldWrap }}>
+                  <div>
+                    <label style={style.label} htmlFor="expiry">Expiry</label>
+                    <input id="expiry" name="expiry" className="pay-input" placeholder="MM/YY"
+                      style={style.input} value={form.expiry} onChange={handleChange} required />
+                  </div>
+                  <div>
+                    <label style={style.label} htmlFor="cvv">CVV</label>
+                    <input id="cvv" name="cvv" type="password" className="pay-input" placeholder="•••"
+                      style={style.input} value={form.cvv} onChange={handleChange} required />
+                  </div>
+                </div>
+
+                <div style={style.fieldWrap}>
+                  <label style={style.label} htmlFor="email">Email for Receipt</label>
+                  <input id="email" name="email" type="email" className="pay-input" placeholder="you@example.com"
+                    style={style.input} value={form.email} onChange={handleChange} required />
+                </div>
+
+                <button
+                  type="submit"
+                  style={{ ...style.payBtn, background: loading ? '#334155' : '#0f172a' }}
+                  onMouseEnter={(e) => !loading && (e.currentTarget.style.background = '#1e293b')}
+                  onMouseLeave={(e) => !loading && (e.currentTarget.style.background = '#0f172a')}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span style={{
+                        width: 16, height: 16, border: '2px solid rgba(255,255,255,.3)',
+                        borderTop: '2px solid #fff', borderRadius: '50%',
+                        display: 'inline-block',
+                        animation: 'spin 0.8s linear infinite',
+                      }} />
+                      Processing…
+                    </>
+                  ) : (
+                    <>🔒 Pay ${total.toFixed(2)}</>
+                  )}
+                </button>
+
+                <div style={style.badge}>
+                  <span>🔐</span> 256-bit SSL encrypted · PCI DSS compliant
+                </div>
+              </form>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b' }}>
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>🅿</div>
+                <p style={{ fontWeight: '600', color: '#0f172a', marginBottom: '6px' }}>Pay with PayPal</p>
+                <p style={{ fontSize: '14px' }}>You'll be redirected to PayPal to complete your payment.</p>
+                <button
+                  style={{ ...style.payBtn, marginTop: '28px' }}
+                  onClick={() => navigate('/order/success/new')}
+                >
+                  Continue to PayPal →
+                </button>
+              </div>
             )}
-
-            <div style={style.divider} />
-
-            <div style={style.summaryRow}>
-              <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
-            </div>
-            <div style={style.summaryRow}>
-              <span>Shipping</span>
-              <span style={{ color: shipping === 0 ? '#22c55e' : undefined }}>
-                {shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}
-              </span>
-            </div>
-            <div style={style.divider} />
-            <div style={style.totalRow}>
-              <span>Total</span><span>${total.toFixed(2)}</span>
-            </div>
           </div>
 
-          <div style={{ ...style.card, marginTop: '14px', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '18px' }}>🔄</span>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>30-Day Returns</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Hassle-free return policy</div>
+          {/* ── Right: Order Summary ── */}
+          <div>
+            <div style={style.card}>
+              <p style={style.sectionTitle}>Order Summary</p>
+
+              {cart.length === 0 ? (
+                <p style={{ color: '#94a3b8', fontSize: '14px' }}>Your cart is empty.</p>
+              ) : (
+                cart.map((item) => (
+                  <div key={item._id} style={{ display: 'flex', gap: '12px', marginBottom: '14px', alignItems: 'center' }}>
+                    <div style={{
+                      width: '44px', height: '44px', borderRadius: '10px',
+                      background: '#f1f5f9', flexShrink: 0, overflow: 'hidden',
+                    }}>
+                      {item.images?.[0] && (
+                        <img src={item.images[0]?.url || item.images[0]} alt={item.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8' }}>Qty {item.qty}</div>
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', flexShrink: 0 }}>
+                      ${(item.discountPrice * item.qty).toFixed(2)}
+                    </div>
+                  </div>
+                ))
+              )}
+
+              <div style={style.divider} />
+
+              <div style={style.summaryRow}>
+                <span>Subtotal</span><span>${subtotal.toFixed(2)}</span>
+              </div>
+              <div style={style.summaryRow}>
+                <span>Shipping</span>
+                <span style={{ color: shipping === 0 ? '#22c55e' : undefined }}>
+                  {shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}
+                </span>
+              </div>
+              <div style={style.divider} />
+              <div style={style.totalRow}>
+                <span>Total</span><span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div style={{ ...style.card, marginTop: '14px', padding: '16px 20px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '18px' }}>🔄</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>30-Day Returns</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Hassle-free return policy</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
-    </div>
+      <br />
+      <br />
+      <Footer />
+    </>
+
   );
 };
 
 export default PaymentPage;
+
+// 5:07:50
