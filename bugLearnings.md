@@ -43,6 +43,7 @@ Read this book when you are stuck. The bugs here are not embarrassments — they
 | 16 | [The Wrong Key in the Lock](#chapter-16-the-wrong-key-in-the-lock) | Route Param Mismatch | `ProductDetailsPage.jsx` |
 | 17 | [The Ghost Callback](#chapter-17-the-ghost-callback) | Mongoose Async Hook | `model/user.js` |
 | 18 | [The Drifting Contract](#chapter-18-the-drifting-contract) | Link/Lookup Desync | `ProductCard.jsx` + `ProductDetailsPage.jsx` |
+| 19 | [The Ghost Seller](#chapter-19-the-ghost-seller) | URL Typo / camelCase | `redux/actions/user.js` |
 
 ---
 ---
@@ -1311,5 +1312,79 @@ const d = allProducts && allProducts.find((i) => i._id === name);
 > 2. What does `useParams()` give back? (key name from route + that URL value)
 > 3. What field does `find()` compare? (must match what the URL contains)
 > 4. Are they the same? If not — that is the bug.
+
+*Last updated: 2026-09-03*
+
+---
+---
+
+## Chapter 19: The Ghost Seller
+
+**Date Encountered:** 2026-09-03
+**Symptom:** Shop login appeared to succeed (no error toast) but the seller dashboard showed a 404 or redirected back to `/shop-login` on every attempt, even though the seller existed in the database.
+
+### The Story
+
+The login itself worked perfectly — `POST /shop/login-shop` returned 200 and set the `seller_token` cookie. But after `window.location.reload()`, the app tried to re-hydrate the seller session by calling `loadSeller()`. Inside `loadSeller`, the URL was wrong:
+
+```js
+// BROKEN
+axios.get(`${server}/shop/getSeller`, { withCredentials: true })
+//                          ^^^^^^^^^ camelCase — route doesn't exist
+```
+
+The actual backend route was:
+```js
+router.get("/get-seller", isSeller, ...)  // kebab-case
+```
+
+So every page load fired `GET /api/v2/shop/getSeller` → **404** → `LoadSellerFail` dispatched → `isSeller = false` → `SellerProtectedRoute` redirected to `/shop-login`. The seller was always authenticated at the cookie level but never at the Redux state level.
+
+The seller was permanently a ghost: logged in but invisible to the app.
+
+### Investigation Steps
+
+1. **Observe:** Login form submits, no error toast, but ends up back at `/shop-login` or gets a 404.
+2. **curl the login endpoint:** `POST /api/v2/shop/login-shop` → `{"success":false,"message":"shop not found"}` for wrong creds → route EXISTS and works.
+3. **Check SellerProtectedRoute:** Redirects to `/shop-login` when `!isSeller`. So `isSeller` is false after login.
+4. **Check App.jsx:** `loadSeller()` IS dispatched on startup ✅
+5. **Check `loadSeller` action:** Calls `/shop/getSeller` (camelCase).
+6. **Check backend:** `router.get("/get-seller", ...)` — kebab-case. `getSeller` does not exist.
+7. **Conclude:** URL typo. `getSeller` → `get-seller`.
+
+### Root Cause
+
+```js
+// loadSeller action — wrong URL (camelCase vs kebab-case)
+axios.get(`${server}/shop/getSeller`)   // 404 — doesn't exist
+
+// Backend route — correct URL
+router.get("/get-seller", isSeller, ...) // kebab-case
+```
+
+### The Fix
+
+```js
+// BEFORE
+const { data } = await axios.get(`${server}/shop/getSeller`, { withCredentials: true });
+
+// AFTER
+const { data } = await axios.get(`${server}/shop/get-seller`, { withCredentials: true });
+```
+
+Also fixed: `Shop` model had the same Chapter 17 async pre-save hook bug (`return next()` with async function). Fixed to `return;`.
+
+### The Lesson
+
+> **A successful login does not mean the session is working.** The login sets a cookie. The session works only if the app can verify that cookie on reload via a `/get-me` or `/get-seller` type endpoint. If that endpoint's URL is wrong, the user is permanently logged in at the cookie level but permanently unauthenticated at the app level.
+
+> **camelCase vs kebab-case is an invisible bug.** `getSeller` and `get-seller` are both valid-looking strings. There is no compile error, no lint warning, no type error. The only symptom is a 404 in the network tab. Always `curl` the exact URL the action is calling and verify it returns something.
+
+> **The 404-on-login debugging checklist:**
+> 1. Does the login POST itself return 200? (`curl -X POST .../login-shop`) — if yes, login works.
+> 2. What URL does `loadSeller` call on page reload? Check the network tab.
+> 3. Does `curl GET that-url` return data or 404?
+> 4. What does the backend actually have registered? `grep router. controller/shop.js`
+> 5. Match them up.
 
 *Last updated: 2026-09-03*

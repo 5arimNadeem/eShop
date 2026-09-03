@@ -75,12 +75,13 @@ const shopSchema = new mongoose.Schema({
 });
 
 // Hash password
-shopSchema.pre("save", async function (next) {
+shopSchema.pre("save", async function () {
     if (!this.isModified("password")) {
-        return next();  // ← MUST return here, otherwise bcrypt runs on every save
+        return; // async hooks resolve via promise — never call next()
     }
     this.password = await bcrypt.hash(this.password, 10);
 });
+
 
 // jwt token
 shopSchema.methods.getJwtToken = function () {
