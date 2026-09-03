@@ -13,8 +13,8 @@ import {
   ShopAllEvents,
   ShopAllCoupons,
   ShopPreviewPage,
-  // ShopAllOrders,
-  // ShopOrderDetails,
+  ShopAllOrders,
+  ShopOrderDetails,
   // ShopAllRefunds,
   // ShopSettingsPage,
   // ShopWithDrawMoney,
@@ -138,6 +138,24 @@ const App = () => {
             <SellerProtectedRoute
             >
               <ShopCreateProduct />
+            </SellerProtectedRoute>
+          }
+        />
+
+        <Route path="/dashboard-orders"
+          element={
+            <SellerProtectedRoute
+            >
+              <ShopAllOrders />
+            </SellerProtectedRoute>
+          }
+        />
+
+        <Route path="/order/:id"
+          element={
+            <SellerProtectedRoute
+            >
+              <ShopOrderDetails />
             </SellerProtectedRoute>
           }
         />

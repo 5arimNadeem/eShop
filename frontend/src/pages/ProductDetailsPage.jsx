@@ -16,14 +16,12 @@ const ProductDetailsPage = () => {
 
     useEffect(() => {
         if (eventData !== null) {
-            // EventCard links by _id (?isEvent=true)
+            // EventCard links by _id with ?isEvent=true
             const d = allEvents && allEvents.find((i) => i._id === name);
             setData(d);
         } else {
-            // ProductCard links by slugified name: name.replace(/\s+/g, "-")
-            const d = allProducts && allProducts.find(
-                (i) => i.name.replace(/\s+/g, "-") === name
-            );
+            // ProductCard links by data._id  →  match by _id
+            const d = allProducts && allProducts.find((i) => i._id === name);
             setData(d);
         }
     }, [allProducts, allEvents, name]);

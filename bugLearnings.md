@@ -42,6 +42,7 @@ Read this book when you are stuck. The bugs here are not embarrassments — they
 | 15 | [The Invisible Images](#chapter-15-the-invisible-images) | Data Shape | `ProductCard.jsx` + `ProductDetailsCard.jsx` |
 | 16 | [The Wrong Key in the Lock](#chapter-16-the-wrong-key-in-the-lock) | Route Param Mismatch | `ProductDetailsPage.jsx` |
 | 17 | [The Ghost Callback](#chapter-17-the-ghost-callback) | Mongoose Async Hook | `model/user.js` |
+| 18 | [The Drifting Contract](#chapter-18-the-drifting-contract) | Link/Lookup Desync | `ProductCard.jsx` + `ProductDetailsPage.jsx` |
 
 ---
 ---
@@ -1229,3 +1230,86 @@ userSchema.pre("save", async function () {
 > ```
 
 *Last updated: 2026-08-30*
+
+---
+---
+
+## Chapter 18: The Drifting Contract
+
+**Date Encountered:** 2026-09-03
+**Symptom:** Clicking a product image or name navigated to the product URL but the detail page was blank (header/footer showed, content did not).
+
+### The Story
+
+This is a **relapse of Chapter 16** — but with the roles reversed.
+
+Chapter 16 fixed `ProductDetailsPage` to search by slugified name because `ProductCard` was linking by name slug. Then `ProductCard` was refactored to link by `data._id` instead (a cleaner approach). But `ProductDetailsPage` was never updated to match. The two sides had **drifted apart silently**.
+
+Result:
+
+| Step | Value |
+|------|-------|
+| `ProductCard` link | `/product/${data._id}` → e.g. `/product/6a83ba9860a1...` |
+| Route param (`App.jsx`) | `:name` — captures whatever is in the URL segment |
+| `useParams()` | `{ name: "6a83ba9860a1..." }` |
+| `find()` in page | `i.name.replace(/\s+/g, "-") === name` |
+| Comparison | `"Sarim-Nadeem" === "6a83ba9860a1..."` → **never matches** |
+| `data` | `undefined` → `null` → blank page |
+
+No error. No warning. Just silence.
+
+### Why It Keeps Happening
+
+The link URL and the lookup query are written in **two separate files** with no compile-time contract between them. When one changes, the other doesn't automatically break — it just silently stops working. This is a classic **implicit interface** problem.
+
+### Investigation Steps
+
+1. **Observe:** Product detail page blank again — same Chapter 11/16 signature (header/footer show, content null).
+2. **Hypothesize:** `data` prop is null. Trace where it's set: `ProductDetailsPage.useEffect → find()`.
+3. **Read `ProductDetailsPage`:** `find(i => i.name.replace(...) === name)` — searching by name slug.
+4. **Read `ProductCard`:** Link is `/product/${data._id}` — puts an ObjectId in the URL.
+5. **Simulate the comparison:** `"Sarim-Nadeem" === "6a83ba9860a1533e09a54df3"` → `false`. Always.
+6. **Conclude:** The page was never updated after `ProductCard` was refactored to link by `_id`.
+
+### Root Cause
+
+```
+ProductCard    →  /product/${data._id}          (links by ObjectId)
+ProductDetailsPage → i.name.replace(...) === name  (searches by name slug)
+
+→ Comparison:  "ObjectId" === "Name-Slug"  →  false  →  data = null  →  blank
+```
+
+### The Fix
+
+```js
+// ProductDetailsPage.jsx — match what ProductCard puts in the URL
+
+// BEFORE (Chapter 16 fix, now stale)
+const d = allProducts && allProducts.find(
+    (i) => i.name.replace(/\s+/g, "-") === name
+);
+
+// AFTER — ProductCard links by _id, so search by _id
+const d = allProducts && allProducts.find((i) => i._id === name);
+```
+
+### The Lesson
+
+> **The Link-Lookup Contract.** Whenever a `<Link to={...}>` puts a value in the URL, and a page reads that value with `useParams()` to look something up, those two sides form an implicit contract. The contract has three parts that must always stay in sync:
+> ```
+> 1. What value goes INTO the URL   (ProductCard  →  data._id)
+> 2. What param name extracts it    (App.jsx route → :name)
+> 3. What field searches it         (ProductDetailsPage → i._id)
+> ```
+> **If any one part changes, you must update the other two.** There is no compiler to warn you. The only symptom is a blank page.
+
+> **Refactoring one file silently breaks another.** When `ProductCard` was refactored from name-slug links to `_id` links, it was a local change. But the *consumer* of that URL — `ProductDetailsPage` — still had the old strategy hardcoded. Always search for all files that *read* a URL segment whenever you change what a `<Link>` *writes* into one.
+
+> **The blank-page diagnostic checklist** (runs in under 60 seconds):
+> 1. What is the URL in the browser? (e.g. `/product/6a83ba98...`)
+> 2. What does `useParams()` give back? (key name from route + that URL value)
+> 3. What field does `find()` compare? (must match what the URL contains)
+> 4. Are they the same? If not — that is the bug.
+
+*Last updated: 2026-09-03*
