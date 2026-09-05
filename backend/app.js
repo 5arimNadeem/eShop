@@ -31,11 +31,13 @@ const event = require('./controller/event.js');
 const couponCode = require('./controller/couponCode.js');
 const payment = require('./controller/payment.js');
 const order = require('./controller/order.js');
-const conversation = require('./model/conversation.js');
+const conversation = require('./controller/conversation.js');
+const message = require('./controller/message.js');
 
 // Using Routes
 app.use('/api/v2/user', user);
 app.use('/api/v2/conversation', conversation);
+app.use('/api/v2/message', message);
 app.use('/api/v2/shop', shop);
 app.use('/api/v2/product', product);
 app.use('/api/v2/event', event);

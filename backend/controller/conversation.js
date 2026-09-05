@@ -1,4 +1,3 @@
-import { Request, Response, NextFunction } from "express";
 const Conversation = require("../model/conversation");
 const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");

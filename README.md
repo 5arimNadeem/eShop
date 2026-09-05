@@ -1313,47 +1313,6 @@ export const backendUrl = "http://localhost:8000/";
 
 ---
 
-## 🚧 Known Gaps & Roadmap
-
-Stated plainly, because a case study that only lists wins isn't one.
-
-### Bugs to fix
-
-- [ ] **Chat REST routes are unreachable.** `app.js` mounts `model/conversation.js` (a Mongoose model) at `/api/v2/conversation` instead of `controller/conversation.js`, and `controller/message.js` is never mounted. Both controllers are written and correct — only the two mounting lines are wrong.
-- [ ] **`isAdmin` is imported but does not exist.** `controller/order.js` destructures `isAdmin` from `middleware/auth.js`, which never exports it. Currently harmless (no route uses it), but it will throw the moment one does.
-- [ ] **`getAllOrdersOfAdmin` calls a route that isn't there.** The Redux action requests `/order/admin-all-orders`; no such endpoint is registered.
-
-### Features to build
-
-- [ ] Admin panel — platform-wide users, shops, orders, and withdraw approvals
-- [ ] `Withdraw` model and the seller payout request lifecycle
-- [ ] Forgot / reset password flow (`resetPasswordToken` and `resetPasswordTime` exist in the schema; the endpoints do not)
-- [ ] Finish the PayPal integration (handlers exist; the SDK import is commented out)
-- [ ] Server-side search and pagination for the catalog
-- [ ] Push notifications
-
-### Infrastructure
-
-- [ ] Replace hardcoded `localhost` URLs with environment-driven config (`frontend/src/server.js`, `app.js` CORS, `socket/index.js` CORS) — **this blocks every deployment task below**
-- [ ] Dockerfiles for the three services + `docker-compose.yml` with MongoDB
-- [ ] GitHub Actions CI: install → lint → build → deploy
-- [ ] Automated test suite (`npm test` is still the CRA placeholder on the frontend and an `exit 1` stub on the backend)
-- [ ] Structured request logging and external error monitoring
-- [ ] SameSite / CSRF hardening on the auth cookies
-- [ ] Remove committed artifacts from the repo — `backend/uploads/`, `backend/tmp/`, and `node_modules` are currently tracked
-
----
-
-## 🏁 Conclusion
-
-eShop demonstrates that a multi-vendor marketplace is not a single-vendor store with a `shopId` column bolted on. The genuinely multi-tenant decisions — **splitting a mixed cart into per-shop orders**, **running two independent authentication identities in one browser**, **crediting seller balances only at delivery so refunds never become clawbacks**, and **detaching the real-time tier so chat load can never starve checkout** — are what separate the two, and each of them shaped the architecture rather than being retrofitted into it.
-
-The engineering discipline shows most clearly in the failure paths: a server that refuses to open its port before the database answers, a Cloudinary helper that names the exact missing environment variable, an upload guard that explains *why* a buffer was absent, and a cleanup routine that deliberately swallows its own errors so it can never block the user's actual request. Those choices came from debugging real failures, and they are documented above alongside the bugs still open.
-
-What remains is honest and scoped: the admin tier is designed but unwired, two route-mounting lines are wrong, and the hardcoded `localhost` URLs must become environment-driven before any of it can be containerized or shipped. Every one of those is tracked in the roadmap above.
-
----
-
 ## 👤 Author
 
 **Sarim Nadeem** — [@5arimNadeem](https://github.com/5arimNadeem)
