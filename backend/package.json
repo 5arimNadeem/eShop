@@ -2,13 +2,13 @@
   "name": "eshop",
   "version": "1.0.0",
   "description": "",
-  "homepage": "https://github.com/5arimNadeem/E-Shop-MultiVendor#readme",
+  "homepage": "https://github.com/5arimNadeem/eShop#readme",
   "bugs": {
-    "url": "https://github.com/5arimNadeem/E-Shop-MultiVendor/issues"
+    "url": "https://github.com/5arimNadeem/eShop/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/5arimNadeem/E-Shop-MultiVendor.git"
+    "url": "git+https://github.com/5arimNadeem/eShop.git"
   },
   "license": "ISC",
   "author": "sarim",

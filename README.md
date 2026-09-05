@@ -2,7 +2,7 @@
 
 **A complete case study of a MERN marketplace: architecture, data design, flows, and the decisions behind them.**
 
-> Repository: [5arimNadeem/E-Shop-MultiVendor](https://github.com/5arimNadeem/E-Shop-MultiVendor) · Structure inspired by [hassaansaleem28/Multi-Vendor-Ecommerce-App](https://github.com/hassaansaleem28/Multi-Vendor-Ecommerce-App)
+> Repository: [5arimNadeem/eShop](https://github.com/5arimNadeem/eShop) · Structure inspired by [hassaansaleem28/Multi-Vendor-Ecommerce-App](https://github.com/hassaansaleem28/Multi-Vendor-Ecommerce-App)
 
 ---
 
@@ -1244,8 +1244,8 @@ Some errors are made friendly at the *source*, before they can propagate:
 ### 1. Clone
 
 ```bash
-git clone https://github.com/5arimNadeem/E-Shop-MultiVendor.git
-cd E-Shop-MultiVendor
+git clone https://github.com/5arimNadeem/eShop.git
+cd eShop
 ```
 
 ### 2. Backend — port 8000
