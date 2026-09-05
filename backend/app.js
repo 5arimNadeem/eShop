@@ -30,14 +30,18 @@ const product = require('./controller/product.js');
 const event = require('./controller/event.js');
 const couponCode = require('./controller/couponCode.js');
 const payment = require('./controller/payment.js');
+const order = require('./controller/order.js');
+const conversation = require('./model/conversation.js');
 
 // Using Routes
 app.use('/api/v2/user', user);
+app.use('/api/v2/conversation', conversation);
 app.use('/api/v2/shop', shop);
 app.use('/api/v2/product', product);
 app.use('/api/v2/event', event);
 app.use('/api/v2/coupon', couponCode);
 app.use('/api/v2/payment', payment);
+app.use('/api/v2/order', order);
 
 // Error Handling
 app.use(ErrorHandler);

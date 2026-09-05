@@ -1,9 +1,7 @@
 const express = require("express");
-const path = require("path");
 const router = express.Router();
 const User = require("../model/user.js");
 const ErrorHandler = require("../utils/ErrorHandler.js"); // Fixed capitalization
-const fs = require("fs");
 const { upload } = require("../multer");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendMail.js");
@@ -11,7 +9,7 @@ const sendToken = require("../utils/jwtToken.js");
 const catchAsyncError = require("../middleware/catchAsyncErrors.js");
 const { isAuthenticated } = require("../middleware/auth.js");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
-const { uploadToCloudinary } = require("../utils/cloudinary.js");
+const { uploadToCloudinary, deleteImagesByUrl } = require("../utils/cloudinary.js");
 
 router.post("/create-user", upload.single("file"), async (req, res, next) => {
     try {
@@ -225,15 +223,23 @@ router.put("/update-avatar", isAuthenticated, upload.single("image"), catchAsync
             return next(new ErrorHandler("User not found", 404));
         }
 
-        const exsistAvatarpath = `uploads/${existsUser.avatar}`;
+        if (!req.file) {
+            return next(new ErrorHandler("Avatar image is required.", 400));
+        }
 
-        fs.unlinkSync(exsistAvatarpath)
+        // Clear out the previous avatar. Best-effort — a stale image left in
+        // Cloudinary is not worth failing the update over, and pre-Cloudinary
+        // avatars are bare local filenames that this simply skips.
+        await deleteImagesByUrl([existsUser.avatar]);
 
-        const fileUrl = path.join(req.file.filename);
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const filename = `user-${uniqueSuffix}`;
+
+        const uploadResult = await uploadToCloudinary(req.file.buffer, filename, 'users');
 
         const user = await User.findByIdAndUpdate(
             req.user.id,
-            { avatar: fileUrl },
+            { avatar: uploadResult.secure_url },
             // { new: true, runValidators: true }
         );
 

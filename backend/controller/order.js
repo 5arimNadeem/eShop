@@ -21,7 +21,9 @@ router.post(
             const shopItemsMap = new Map();
 
             for (const item of cart) {
-                const shopId = item.shopId;
+                // cart items carry shop as nested object (item.shop._id),
+                // but may also have shopId set directly — support both
+                const shopId = item.shopId || item.shop?._id?.toString();
                 if (!shopItemsMap.has(shopId)) {
                     shopItemsMap.set(shopId, []);
                 }

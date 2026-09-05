@@ -4,8 +4,9 @@ import { BsStarHalf } from "react-icons/bs";
 
 const Ratings = ({ rating }) => {
     const stars = [];
+    const MAX_VALUE = 5
 
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= MAX_VALUE; i++) {
         if (i <= rating) {
             stars.push(
                 <AiFillStar

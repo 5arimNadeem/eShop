@@ -26,11 +26,12 @@ const ProfileSideBar = ({ active, setActive }) => {
     const navigate = useNavigate();
 
     const logoutHandler = () => {
-        axios.get(`${server}/user/logout`, {
+        axios.post(`${server}/user/logout`, {}, {
             withCredentials: true
         }).then((res) => {
             toast.success(res?.data?.message);
             navigate("/");
+            window.location.reload(true);
         }).catch((error) => {
             toast.error(error?.response?.data?.message);
         });

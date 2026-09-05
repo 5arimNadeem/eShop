@@ -6,70 +6,67 @@ const Product = require("../model/product.js");
 const router = express.Router();
 const { upload } = require("../multer");
 const { isSeller, isAuthenticated } = require("../middleware/auth");
-// const fs = require("fs");
-// const Order = require("../model/order.js");
+const Order = require("../model/order.js");
+const { uploadToCloudinary, deleteImagesByUrl } = require("../utils/cloudinary.js");
 
+//create product
 
-// create product 
+router.post(
+    "/create-product",
+    upload.array("images"),
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const shopId = req.body.shopId;
+            const shop = await Shop.findById(shopId);
 
-router.post("/create-product", upload.array("images"), catchAsyncErrors(async (req, res, next) => {
-    try {
-        const shopId = req.body.shopId;
-        const shop = await Shop.findById(shopId);
+            if (!shop) {
+                return next(new ErrorHandler("Shop not found", 404));
+            } else {
+                const files = req.files;
 
-        if (!shop) {
-            return next(new ErrorHandler("Shop not found", 404));
-        } else {
-            const files = req.files;
+                if (!files || files.length === 0) {
+                    return next(new ErrorHandler("Please upload at least one image", 400));
+                }
 
-            // if (!files || files.length === 0) {
-            //     return next(new ErrorHandler("Please upload at least one image", 400));
-            // }
+                // Upload all images to Cloudinary
+                const imageUrls = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+                    const filename = `product-${uniqueSuffix}-${i}`;
 
-            const imageUrls = files.map((file) => `${file.filename}`)
-            console.log(imageUrls)
-            const productData = req.body
-            productData.images = imageUrls
-            productData.shop = shop
+                    try {
+                        const uploadResult = await uploadToCloudinary(file.buffer, filename, 'products');
+                        imageUrls.push(uploadResult.secure_url);
+                    } catch (uploadError) {
+                        console.error('Cloudinary upload error:', uploadError);
+                        return next(new ErrorHandler("Failed to upload image to cloud storage", 500));
+                    }
+                }
 
-            const product = await Product.create(productData);
+                const productData = req.body;
+                productData.images = imageUrls;
+                productData.shop = shop;
 
-            res.status(201).json({
-                success: true,
-                product,
-            });
+                const product = await Product.create(productData);
+
+                res.status(201).json({
+                    success: true,
+                    message: "Product created successfully",
+                    product,
+                });
+            }
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
         }
-    } catch (error) {
-        return next(new ErrorHandler(error, 400))
-    }
-}));
+    })
+);
 
-
-// get all products (global – used by FeaturedProduct, BestDeals, HomePage)
-router.get("/get-all-products", catchAsyncErrors(async (req, res, next) => {
-    try {
-        const products = await Product.find().sort({ createdAt: -1 });
-        res.status(200).json({
-            success: true,
-            products,
-        });
-    } catch (error) {
-        return next(new ErrorHandler(error.message, 500));
-    }
-}));
-
+//get all product 
 
 router.get("/get-all-products-shop/:shopId", catchAsyncErrors(async (req, res, next) => {
     try {
-        // dispatch({
-        //     type: "getAllProductsShopRequest"
-        // })
         const products = await Product.find({ shopId: req.params.shopId });
-
-        // dispatch({
-        //     type:"getAllProductsShopSuccess",
-        //     payload:products,
-        // })
 
         res.status(200).json({
             success: true,
@@ -81,43 +78,105 @@ router.get("/get-all-products-shop/:shopId", catchAsyncErrors(async (req, res, n
     }
 }));
 
-// delete all products of a shop 
+//delete product of a shop
 
 router.delete("/delete-shop-product/:id", isSeller, catchAsyncErrors(async (req, res, next) => {
     try {
-        const productId = req.params.id
-
-        const productData = await Product.findById(productId)
+        const productData = await Product.findById(req.params.id);
 
         if (!productData) {
-            return next(new ErrorHandler("Product not found", 500));
+            return next(new ErrorHandler("Product not found", 404));
         }
 
-        productData.images.forEach((imageUrl) => {
-            const filename = imageUrl
-            const filePath = `uploads/${filename}`
-            fs.unlink(filePath, (err) => {
-                if (err) {
-                    console.log(err)
-                }
-            })
-        })
+        await deleteImagesByUrl(productData.images);
 
-        const product = await Product.findByIdAndDelete(productId)
-        if (!product) {
-            return next(new ErrorHandler("Product not found", 500));
-        }
+        const product = await Product.findByIdAndDelete(req.params.id);
 
-        res.status(201).json({
+        res.status(200).json({
             success: true,
-            message: "product deleted successfully",
-        })
-
+            message: "Product deleted successfully",
+        });
     } catch (error) {
-        return next(new ErrorHandler(error.message, 500));
+        return next(new ErrorHandler("error in the delete route", error.message, 500));
     }
 }));
 
-// delete 
+// get all products
+router.get(
+    "/get-all-products",
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const products = await Product.find().sort({ createdAt: -1 });
+
+            res.status(201).json({
+                success: true,
+                products,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error, 400));
+        }
+    })
+);
+
+// review for a product 
+router.put(
+    "/create-new-review",
+    isAuthenticated,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const { user, rating, comment, productId, orderId } = req.body;
+
+            const product = await Product.findById(productId);
+
+            if (!product) {
+                return next(new ErrorHandler("Product not found", 404));
+            }
+
+            const review = {
+                user,
+                rating,
+                comment,
+                productId,
+            };
+
+            const isReviewed = product.reviews.find(
+                (rev) => rev.user._id === req.user._id
+            );
+
+            if (isReviewed) {
+                product.reviews.forEach((rev) => {
+                    if (rev.user._id === req.user._id) {
+                        (rev.rating = rating), (rev.comment = comment), (rev.user = user);
+                    }
+                });
+            } else {
+                product.reviews.push(review);
+            }
+
+            let avg = 0;
+
+            product.reviews.forEach((rev) => {
+                avg += rev.rating;
+            });
+
+            product.ratings = avg / product.reviews.length;
+
+            await product.save({ validateBeforeSave: false });
+
+            await Order.findByIdAndUpdate(
+                orderId,
+                { $set: { "cart.$[elem].isReviewed": true } },
+                { arrayFilters: [{ "elem._id": productId }], new: true }
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Reviwed succesfully!",
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error, 400));
+        }
+    })
+);
 
 module.exports = router;

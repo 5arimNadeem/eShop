@@ -6,7 +6,7 @@ const Event = require("../model/event.js");
 const router = express.Router();
 const { upload } = require("../multer");
 const { isSeller, isAuthenticated } = require("../middleware/auth");
-const fs = require("fs")
+const { uploadToCloudinary, deleteImagesByUrl } = require("../utils/cloudinary.js");
 
 // create product 
 
@@ -20,12 +20,24 @@ router.post("/create-event", isSeller, upload.array("images"), catchAsyncErrors(
         } else {
             const files = req.files;
 
-            // if (!files || files.length === 0) {
-            //     return next(new ErrorHandler("Please upload at least one image", 400));
-            // }
+            if (!files || files.length === 0) {
+                return next(new ErrorHandler("Please upload at least one image", 400));
+            }
 
-            const imageUrls = files.map((file) => `${file.filename}`)
-            console.log(imageUrls)
+            const imageUrls = [];
+            for (let i = 0; i < files.length; i++) {
+                const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+                const filename = `event-${uniqueSuffix}-${i}`;
+
+                try {
+                    const uploadResult = await uploadToCloudinary(files[i].buffer, filename, 'events');
+                    imageUrls.push(uploadResult.secure_url);
+                } catch (uploadError) {
+                    console.error('Cloudinary upload error:', uploadError);
+                    return next(new ErrorHandler("Failed to upload image to cloud storage", 500));
+                }
+            }
+
             const eventData = req.body
             eventData.images = imageUrls
             eventData.shop = shop
@@ -85,15 +97,7 @@ router.delete("/delete-shop-event/:id", isSeller, catchAsyncErrors(async (req, r
             return next(new ErrorHandler("Event not found", 500));
         }
 
-        eventData.images.forEach((imageUrl) => {
-            const filename = imageUrl
-            const filePath = `uploads/${filename}`
-            fs.unlink(filePath, (err) => {
-                if (err) {
-                    console.log(err)
-                }
-            })
-        })
+        await deleteImagesByUrl(eventData.images)
 
         const event = await Event.findByIdAndDelete(eventId)
 

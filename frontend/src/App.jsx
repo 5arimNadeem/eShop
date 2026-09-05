@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { ActivationPage, BestSellingPage, EventsPage, FAQPage, HomePage, LoginPage, ProductsPage, SignupPage, CheckoutPage, PaymentPage, OrderSuccessPage, ProductDetailsPage, ProfilePage, ShopCreatePage, SellerActivationPage, ShopLoginPage } from './Routes.js'
+import { ActivationPage, BestSellingPage, EventsPage, FAQPage, HomePage, LoginPage, ProductsPage, SignupPage, CheckoutPage, PaymentPage, OrderSuccessPage, ProductDetailsPage, ProfilePage, ShopCreatePage, SellerActivationPage, ShopLoginPage, OrderDetailsPage, TrackOrderPage, UserInbox } from './Routes.js'
 import Loader from './components/Layout/Loader.jsx'
 
 import {
@@ -15,12 +15,12 @@ import {
   ShopPreviewPage,
   ShopAllOrders,
   ShopOrderDetails,
-  // ShopAllRefunds,
-  // ShopSettingsPage,
-  // ShopWithDrawMoney,
-  // ShopInboxPage
+  ShopAllRefunds,
+  ShopSettingsPage,
+  ShopWithDrawMoney,
+  ShopInboxPage
 } from "./ShopRoutes.js";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import Store from "./redux/store.js";
 import { loadSeller, loadUser } from "./redux/actions/user.js";
 import { getAllProducts } from "./redux/actions/product.js";
@@ -44,13 +44,6 @@ const App = () => {
     setStripeApiKey(data.stripeApiKey);
   }
 
-  useEffect(() => {
-    axios.get(`${server}/user/get-user`, { withCredentials: true }).then((res) => {
-      toast.success(res.data.message)
-    }).catch((err) => {
-      toast.error(err?.response?.data?.message)
-    })
-  }, []);
 
   useEffect(() => {
     Store.dispatch(loadUser());
@@ -65,20 +58,6 @@ const App = () => {
 
   return (
     <BrowserRouter>
-      {stripeApiKey && (
-        <Elements stripe={loadStripe(stripeApiKey)}>
-          <Routes>
-            <Route
-              path="/payment"
-              element={
-                <ProtectedRoute>
-                  <PaymentPage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Elements>
-      )}
       <Routes>
         <Route path='/' element={<HomePage />} />
         <Route path='/login' element={<LoginPage />} />
@@ -98,8 +77,46 @@ const App = () => {
             <CheckoutPage />
           </ProtectedRoute>
         } />
-        <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/order/success/:id" element={<OrderSuccessPage />} />
+        <Route path="/payment"
+          element={
+            stripeApiKey ? (
+              <Elements stripe={loadStripe(stripeApiKey)}>
+                <ProtectedRoute>
+                  <PaymentPage />
+                </ProtectedRoute>
+              </Elements>
+            ) : (
+              <div className="w-full h-screen flex items-center justify-center">
+                <p>Loading payment gateway...</p>
+              </div>
+            )
+          }
+        />
+        <Route path="/user/order/:id"
+          element={
+            <ProtectedRoute>
+              <OrderDetailsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/user/order/:id"
+          element={
+            <ProtectedRoute>
+              <OrderDetailsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/user/track/order/:id"
+          element={
+            <ProtectedRoute>
+              <TrackOrderPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/order/success" element={<OrderSuccessPage />} />
 
         <Route path="/profile" element={
           <ProtectedRoute
@@ -108,6 +125,15 @@ const App = () => {
             <ProfilePage />
           </ProtectedRoute>
         } />
+
+        <Route
+          path="/inbox"
+          element={
+            <ProtectedRoute>
+              <UserInbox />
+            </ProtectedRoute>
+          }
+        />
 
         {/* shop routes */}
 
@@ -148,6 +174,28 @@ const App = () => {
             >
               <ShopAllOrders />
             </SellerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard-refunds"
+          element={
+            <>
+              <SellerProtectedRoute>
+                <ShopAllRefunds />
+              </SellerProtectedRoute>
+            </>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <>
+              <SellerProtectedRoute>
+                <ShopSettingsPage />
+              </SellerProtectedRoute>
+            </>
           }
         />
 
@@ -192,6 +240,25 @@ const App = () => {
             <SellerProtectedRoute
             >
               <ShopAllCoupons />
+            </SellerProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/dashboard-withdraw-money"
+          element={
+            <>
+              <SellerProtectedRoute>
+                <ShopWithDrawMoney />
+              </SellerProtectedRoute>
+            </>
+          }
+        />
+        <Route
+          path="/dashboard-messages"
+          element={
+            <SellerProtectedRoute>
+              <ShopInboxPage />
             </SellerProtectedRoute>
           }
         />

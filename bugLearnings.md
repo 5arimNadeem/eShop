@@ -44,6 +44,12 @@ Read this book when you are stuck. The bugs here are not embarrassments — they
 | 17 | [The Ghost Callback](#chapter-17-the-ghost-callback) | Mongoose Async Hook | `model/user.js` |
 | 18 | [The Drifting Contract](#chapter-18-the-drifting-contract) | Link/Lookup Desync | `ProductCard.jsx` + `ProductDetailsPage.jsx` |
 | 19 | [The Ghost Seller](#chapter-19-the-ghost-seller) | URL Typo / camelCase | `redux/actions/user.js` |
+| 20 | [The Commented Corpse](#chapter-20-the-commented-corpse) | Reducer Not Registered | `redux/store.js` |
+| 21 | [The Naked Route](#chapter-21-the-naked-route) | Duplicate Route / Missing Context | `App.jsx` |
+| 22 | [The Three-Headed Payment Bug](#chapter-22-the-three-headed-payment-bug) | Async Key / Wrong Field / Dead Route | `App.jsx` + `order.js` |
+| 23 | [The Wrong Method & The Wrong Name](#chapter-23-the-wrong-method--the-wrong-name) | HTTP Method + Env Var Mismatch | `ProfileSideBar.jsx` + `payment.js` |
+| 24 | [The Forgotten Router](#chapter-24-the-forgotten-router) | Router Not Mounted | `app.js` |
+| 25 | [The Exported Ghost](#chapter-25-the-exported-ghost) | Route Never Registered | `App.jsx` |
 
 ---
 ---
@@ -1388,3 +1394,553 @@ Also fixed: `Shop` model had the same Chapter 17 async pre-save hook bug (`retur
 > 5. Match them up.
 
 *Last updated: 2026-09-03*
+
+---
+---
+
+## Chapter 20: The Commented Corpse
+
+**Date Encountered:** 2026-09-04
+**Symptom:** `TypeError: Cannot destructure property 'orders' of useSelector(...) as it is undefined` — app crashed immediately on navigating to the seller dashboard.
+
+### The Story
+
+The `DashboardHero` component read from the Redux store like this:
+
+```js
+const { orders } = useSelector((state) => state.order);
+```
+
+But in `store.js`, the `orderReducer` was commented out:
+
+```js
+// import { orderReducer } from './reducers/order';  // ← dead
+
+const Store = configureStore({
+  reducer: {
+    user: userReducer,
+    seller: sellerReducer,
+    // order: orderReducer,   // ← also dead
+  },
+});
+```
+
+`state.order` didn't exist in the store at all — it was `undefined`. Destructuring `undefined` throws immediately with a `TypeError`. The component never rendered.
+
+This is likely a leftover from a refactor or debugging session where someone commented it out temporarily and forgot to re-enable it.
+
+### Investigation Steps
+
+1. **Read the error:** `Cannot destructure property 'orders' of useSelector(...) as it is undefined`.
+2. **Identify the pattern:** Destructuring `undefined` = the `useSelector` call returned `undefined`. Not `null`, not `{}` — `undefined`.
+3. **This means `state.order` itself is `undefined`** — the slice doesn't exist in the store.
+4. **Check `store.js`:** `orderReducer` import and registration are both commented out.
+5. **Fix:** Uncomment both lines.
+
+### Root Cause
+
+```js
+// store.js — both lines commented out
+// import { orderReducer } from './reducers/order';
+// order: orderReducer
+
+// Result in store:
+// state = { user, seller, products, event, cart, wishlist }
+// state.order = undefined
+
+// Component:
+const { orders } = useSelector((state) => state.order);
+// → const { orders } = undefined  →  TypeError
+```
+
+### The Fix
+
+```js
+// BEFORE
+// import { orderReducer } from './reducers/order';
+// order: orderReducer
+
+// AFTER
+import { orderReducer } from './reducers/order';
+order: orderReducer,
+```
+
+### The Lesson
+
+> **`Cannot destructure property 'X' of useSelector(...) as it is undefined` always means the entire Redux slice is missing from the store, not just the property.** If it were `{ orders: undefined }`, you'd get a silent `undefined` variable — not a crash. A crash means the object itself is `undefined`. Go to `store.js` immediately and check if the slice is registered.
+
+> **Commented-out reducers are invisible bugs.** A commented-out import and registration compiles fine, shows no warning, and runs fine — until a component tries to read from that slice. The error only appears at runtime, at the exact moment the component mounts.
+
+> **The commented-code danger pattern:**
+> ```js
+> // import { orderReducer } from './reducers/order';  ← no compile error
+> // order: orderReducer                               ← no runtime error... yet
+> ```
+> The time bomb only detonates when a component does `state.order.X`.
+
+> **Diagnostic: `useSelector(state => state.X)` returns `undefined`** → the reducer for key `X` is not registered. Check `store.js`. Don't look at the component, the action, or the reducer file first — go straight to the store.
+
+*Last updated: 2026-09-04*
+
+---
+---
+
+## Chapter 21: The Naked Route
+
+**Date Encountered:** 2026-09-04
+**Symptom:** `Could not find Elements context; You need to wrap the part of your app that calls useStripe() in an <Elements> provider.` — crash immediately on navigating to `/payment`.
+
+### The Story
+
+`Payment.jsx` uses `useStripe()` from `@stripe/react-stripe-js`, which requires the component to be a descendant of an `<Elements>` provider (similar to how `useSelector` requires a `<Provider>`).
+
+The developer correctly set up an `<Elements>` wrapper in `App.jsx`:
+
+```jsx
+{stripeApiKey && (
+    <Elements stripe={loadStripe(stripeApiKey)}>
+        <Routes>
+            <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+        </Routes>
+    </Elements>
+)}
+```
+
+But then, **lower in the same file**, a second bare route was also declared inside the main `<Routes>` block:
+
+```jsx
+<Routes>
+    {/* ... all other routes ... */}
+    <Route path="/payment" element={<PaymentPage />} />  {/* ← NAKED: no Elements, no ProtectedRoute */}
+</Routes>
+```
+
+In React Router v6, each `<Routes>` block is **independent**. Both blocks try to match the URL. The naked route in the second block always matched and rendered `<PaymentPage />` without the `<Elements>` context → `useStripe()` crashed.
+
+### Why The Correct Route Didn't Win
+
+The `<Elements>` block only renders when `stripeApiKey` is truthy. If the key hasn't loaded yet (async fetch), that entire first block doesn't exist in the DOM. The second block's bare route always rendered regardless.
+
+Even after the key loads, having two `<Routes>` blocks matching the same path creates a race condition where the naked route is still matched by the second block.
+
+### Investigation Steps
+
+1. **Read the error:** `Could not find Elements context` → `useStripe()` called outside `<Elements>`.
+2. **Check `Payment.jsx`:** It calls `useStripe()` — it MUST be inside `<Elements>`.
+3. **Check `App.jsx`:** Search for all places `/payment` is routed. Found TWO `<Route path="/payment">` entries.
+4. **Identify which one renders:** The naked route in the main `<Routes>` block renders `<PaymentPage />` without `<Elements>` → crash.
+5. **Fix:** Remove the duplicate naked route. Keep only the one inside `<Elements>`.
+
+### Root Cause
+
+```jsx
+// TWO routes for the same path in App.jsx
+
+// Route 1 — correct (inside Elements)
+{stripeApiKey && (
+    <Elements stripe={loadStripe(stripeApiKey)}>
+        <Routes>
+            <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+        </Routes>
+    </Elements>
+)}
+
+// Route 2 — WRONG (outside Elements, no ProtectedRoute)
+<Routes>
+    <Route path="/payment" element={<PaymentPage />} />  {/* ← always matches, crashes */}
+</Routes>
+```
+
+### The Fix
+
+Remove the duplicate bare `/payment` route from the main `<Routes>` block. The correctly-wrapped route in the `<Elements>` block handles payment correctly.
+
+### The Lesson
+
+> **Provider-dependent hooks (`useStripe`, `useSelector`, `useNavigate`, etc.) crash with a context error when the component renders outside their required provider.** The error message always names the missing provider. Trace upward through the component tree to find where the provider is (or isn't).
+
+> **Two `<Routes>` blocks in the same app match independently.** If you have `/payment` in both blocks, both can potentially match. React Router v6 renders whichever `<Routes>` block's match is active — which may NOT be the one with the correct provider wrapping.
+
+> **Search for duplicate routes before debugging context errors.** Run `grep -n 'path="/payment"' App.jsx`. If you see the same path twice, you have a duplicate route problem. Remove the one without the correct provider.
+
+> **Conditional providers create timing gaps.** `{stripeApiKey && <Elements>...</Elements>}` means the provider only exists AFTER the async key fetch. During that gap, any route inside that block doesn't exist. A duplicate naked route fills that gap — but incorrectly. The right solution is to ensure the payment page isn't accessible until the key is ready, not to add a fallback naked route.
+
+*Last updated: 2026-09-04*
+
+---
+---
+
+## Chapter 22: The Three-Headed Payment Bug
+
+**Date Encountered:** 2026-09-04
+**Symptom A:** Clicking "Go to Payment" showed a blank page.
+**Symptom B:** Payment completed but order never appeared in seller's dashboard.
+**Symptom C:** After successful payment, app navigated to a blank page.
+
+Three separate bugs, all in the payment→order flow.
+
+---
+
+### Bug 22-A: The Async Key Gap (Blank Payment Page)
+
+In `App.jsx`, the `/payment` route was inside a conditional block:
+
+```jsx
+{stripeApiKey && (
+    <Elements stripe={loadStripe(stripeApiKey)}>
+        <Routes>
+            <Route path="/payment" ... />
+        </Routes>
+    </Elements>
+)}
+```
+
+`stripeApiKey` is fetched asynchronously on mount. While the fetch is in flight, `stripeApiKey` is `""` (falsy) → the entire block doesn't render → no `/payment` route exists → React Router matches nothing → blank page.
+
+**Fix:** Move the `/payment` route inside the main `<Routes>` block. Use an inline conditional to wrap `<PaymentPage>` in `<Elements>` when the key is ready, or show a loading fallback:
+
+```jsx
+<Route path="/payment"
+    element={
+        stripeApiKey ? (
+            <Elements stripe={loadStripe(stripeApiKey)}>
+                <ProtectedRoute><PaymentPage /></ProtectedRoute>
+            </Elements>
+        ) : (
+            <div>Loading payment gateway...</div>
+        )
+    }
+/>
+```
+
+This way the route always exists. No blank page — only a loading message while the key fetches.
+
+---
+
+### Bug 22-B: The Nested Field (No Orders in Shop)
+
+The backend `create-order` groups cart items by shop:
+
+```js
+// BROKEN
+const shopId = item.shopId;  // undefined!
+```
+
+But cart items are built from the product object, which has a **nested** shop:
+
+```js
+product = {
+    _id: "...",
+    name: "...",
+    shop: { _id: "6a83ba...", name: "My Shop" },  // nested object
+    // NO top-level shopId field
+}
+
+cartItem = { ...product, qty: 1 }  // shopId still undefined
+```
+
+So `item.shopId = undefined`. The `shopItemsMap` groups all items under the `undefined` key. One order IS created, but stored with `cart[*].shopId = undefined`.
+
+The seller query:
+```js
+Order.find({ "cart.shopId": req.params.shopId })
+// searches for shopId = "6a83ba..."
+// stored value is undefined → no match → 0 orders
+```
+
+**Fix:** Read shopId from the nested object as fallback:
+
+```js
+// AFTER
+const shopId = item.shopId || item.shop?._id?.toString();
+```
+
+Now orders are correctly grouped per shop and the seller query matches.
+
+---
+
+### Bug 22-C: The Dead Navigate (Blank Post-Payment Page)
+
+All three payment handlers (card, PayPal, COD) navigated to:
+```js
+navigate("/order/success");
+```
+
+But the App.jsx route was:
+```jsx
+<Route path="/order/success/:id" element={<OrderSuccessPage />} />
+```
+
+`/order/success` doesn't match `/order/success/:id` in React Router v6 — `:id` is required. No match → blank page after a successful payment.
+
+**Fix:** Change the route to not require `:id`:
+```jsx
+<Route path="/order/success" element={<OrderSuccessPage />} />
+```
+
+---
+
+### The Full Broken Flow
+
+```
+1. User clicks "Go to Payment"
+   → stripeApiKey not loaded yet → /payment route doesn't exist → BLANK PAGE (Bug A)
+
+2. If key loads and payment completes:
+   → create-order called with item.shopId = undefined
+   → order created but invisible to seller (Bug B)
+
+3. After create-order succeeds:
+   → navigate("/order/success") called
+   → route is /order/success/:id → no match → BLANK PAGE (Bug C)
+```
+
+### The Lessons
+
+> **Async-gated routes are dangerous.** If a route only exists inside `{someAsyncValue && <Routes>}`, it won't exist until the value loads. The user may land on a blank page if they navigate before it resolves. Always keep routes in the main Routes block and gate only the component content.
+
+> **Flat vs nested field mismatch is silent.** `item.shopId` vs `item.shop._id` are both valid-looking JavaScript — neither throws. The data just silently misses, and queries downstream silently return empty results. Always inspect an actual cart item in the DB or console before writing a query filter.
+
+> **Route parameter vs navigate path must match exactly.** `path="/order/success/:id"` requires an id segment. `navigate("/order/success")` has no id. React Router v6 does NOT fuzzy-match — it requires all segments to be present. Always check that navigate calls produce a URL that matches an existing route pattern.
+
+*Last updated: 2026-09-04*
+
+---
+---
+
+## Chapter 23: The Wrong Method & The Wrong Name
+
+**Date Encountered:** 2026-09-05
+**Symptom A:** Clicking logout didn't remove the token — user stayed logged in.
+**Symptom B:** Payment page showed "Loading payment gateway..." and orders were never placed.
+
+Two unrelated bugs, both invisible at a glance.
+
+---
+
+### Bug 23-A: The Wrong HTTP Method (Logout Fails)
+
+The frontend logout handler called:
+```js
+// ProfileSideBar.jsx
+axios.GET(`${server}/user/logout`, { withCredentials: true })
+```
+
+But the backend registered it as:
+```js
+// controller/user.js
+router.POST("/logout", ...)
+```
+
+`GET /user/logout` → **404** (route not found). The cookie-clearing code never ran. The `token` cookie stayed alive. The user appeared to navigate away but was still authenticated.
+
+**Why shop logout worked:** The shop controller registered its logout as `router.GET("/logout", ...)` — matching the frontend's `axios.get`. Only the user logout had the mismatch.
+
+**Fix:** Change frontend to `axios.post`:
+```js
+// BEFORE
+axios.get(`${server}/user/logout`, { withCredentials: true })
+
+// AFTER
+axios.post(`${server}/user/logout`, {}, { withCredentials: true })
+```
+Also added `window.location.reload(true)` to force Redux state reset after logout.
+
+---
+
+### Bug 23-B: The Wrong Env Var Name (Payment Gateway Never Loads)
+
+The backend payment controller read:
+```js
+res.status(200).json({ stripeApiKey: process.env.STRIPE_PUBLISHABLE_KEY });
+```
+
+But the `.env` file defined:
+```
+STRIPE_API_KEY=pk_test_51UAk7d...    ← publishable key
+STRIPE_SECRET_KEY=sk_test_51UAk7d... ← secret key
+```
+
+`process.env.STRIPE_PUBLISHABLE_KEY` = `undefined`. The API returned `{ stripeApiKey: undefined }`. The frontend `setStripeApiKey(undefined)` left `stripeApiKey` falsy. The payment route showed its loading fallback (`"Loading payment gateway..."`) and never rendered `<PaymentPage>`. Orders could never be placed.
+
+**No error thrown** — `undefined` is a valid JSON value and a valid React state value. It just silently blocked the entire payment flow.
+
+**Fix:** Use the correct env var name:
+```js
+// BEFORE
+res.status(200).json({ stripeApiKey: process.env.STRIPE_PUBLISHABLE_KEY });
+
+// AFTER
+res.status(200).json({ stripeApiKey: process.env.STRIPE_API_KEY });
+```
+
+---
+
+### The Diagnostic Pattern
+
+**For logout not working:**
+1. Check network tab — does the logout request return 200 or 404?
+2. If 404: method mismatch. Check backend `router.get` vs `router.post`.
+3. curl both: `curl -X GET .../logout` and `curl -X POST .../logout` — one will return 200, one will return 404.
+
+**For "Loading payment gateway..." persisting:**
+1. Check network tab — what does `GET /payment/stripeapikey` return?
+2. If `{ stripeApiKey: null }` or `{ stripeApiKey: undefined }` — env var name mismatch.
+3. Compare `process.env.VARIABLE_NAME` in controller to actual key names in `.env`.
+
+### The Lessons
+
+> **HTTP method mismatches return 404, not 405.** Express returns 404 (not found) when no route matches the method+path combination, not 405 (method not allowed). This makes method mismatches look identical to missing routes in the browser. Always verify both the path AND the method when debugging a 404.
+
+> **`process.env.WRONG_NAME` silently returns `undefined`.** Node.js doesn't throw when you access a non-existent env var — it just returns `undefined`. The variable is valid JavaScript. JSON.stringify includes it as `null`. The frontend receives it and sets state to `undefined`. The entire feature powered by that key silently dies. Always grep the `.env` file to confirm the exact variable name before referencing it in code.
+
+> **Two logout routes with different methods is a footgun.** If one route uses GET and another uses POST for "the same" action, a copy-paste creates an instant bug. Standardize: all logout routes should use POST (it's a state-changing action — GET should be idempotent).
+
+*Last updated: 2026-09-05*
+
+---
+---
+
+## Chapter 24: The Forgotten Router
+
+**Date Encountered:** 2026-09-05
+**Symptom:** `Cannot POST /api/v2/order/create-order` — plain HTML 404 error on payment confirm.
+
+### The Story
+
+The order controller (`controller/order.js`) was written with all its routes — `create-order`, `get-all-orders`, `get-seller-all-orders`, etc. But it was never imported or mounted in `app.js`.
+
+```js
+// app.js — BEFORE (order router missing)
+const user    = require('./controller/user.js');
+const shop    = require('./controller/shop.js');
+const product = require('./controller/product.js');
+const event   = require('./controller/event.js');
+const coupon  = require('./controller/couponCode.js');
+const payment = require('./controller/payment.js');
+// order — never imported
+
+app.use('/api/v2/user',    user);
+app.use('/api/v2/shop',    shop);
+app.use('/api/v2/product', product);
+app.use('/api/v2/event',   event);
+app.use('/api/v2/coupon',  coupon);
+app.use('/api/v2/payment', payment);
+// /api/v2/order — never mounted
+```
+
+Every request to `/api/v2/order/*` fell through to Express's default 404 handler, returning a raw HTML error page.
+
+### Investigation Steps
+
+1. **Read the error:** `Cannot POST /api/v2/order/create-order` — Express's built-in 404 message format.
+2. **This exact message means:** Express received the request but found no handler for it. The route file exists but isn't mounted.
+3. **Check `app.js`:** Grep for `order`. Not in imports, not in `app.use()`.
+4. **Confirm the controller exists:** `controller/order.js` has `router.post("/create-order", ...)`.
+5. **Fix:** Add import + `app.use('/api/v2/order', order)`.
+
+### Root Cause
+
+```
+controller/order.js   exists and has routes  ✅
+app.js import         missing                 ❌
+app.js app.use()      missing                 ❌
+
+Result: Express has no idea /api/v2/order exists
+        Every request → 404 HTML response
+```
+
+### The Fix
+
+```js
+// app.js — AFTER
+const order = require('./controller/order.js');  // ← add import
+app.use('/api/v2/order', order);                 // ← add mount
+```
+
+### The Lesson
+
+> **Writing a router file does NOT register its routes.** In Express, a router file is just a module that exports a Router object. It has zero effect on the server until it is explicitly imported AND mounted with `app.use()`. The controller can be perfect — if `app.js` doesn't know about it, every request returns `Cannot METHOD /path`.
+
+> **`Cannot POST /path` from Express (plain HTML) = the route is not mounted, not that the route handler has a bug.** If your custom error handler returns JSON but you're seeing a plain HTML error, it means Express never reached your code — the request never matched any route.
+
+> **Always check `app.js` when adding a new controller.** It requires two lines: one `require()` and one `app.use()`. Missing either one kills the entire feature silently.
+
+*Last updated: 2026-09-05*
+
+---
+---
+
+## Chapter 25: The Exported Ghost
+
+**Date Encountered:** 2026-09-05
+**Symptom:** Clicking the arrow button on an order in the profile page redirected to `/user/order/:id` but showed a completely blank page.
+
+### The Story
+
+`OrderDetailsPage` was fully written, correctly exported from `Routes.js`, and properly imported in several places. But it was **never added as a `<Route>` in `App.jsx`**.
+
+```js
+// Routes.js — exported correctly ✅
+export { OrderDetailsPage, ... };
+
+// App.jsx — imported? ❌ NO
+import { ..., OrderSuccessPage } from './Routes.js'  // OrderDetailsPage missing
+
+// App.jsx — route registered? ❌ NO
+// <Route path="/user/order/:id" ...> — doesn't exist
+```
+
+The link in `ProfileContent.jsx`:
+```jsx
+<Link to={`/user/order/${params.id}`}>
+```
+...navigated to a URL that matched zero routes. React Router rendered nothing. Blank page.
+
+### Why It's Easy to Miss
+
+The page component was complete. The export was correct. The link was correct. The only missing piece was two things in `App.jsx`: adding `OrderDetailsPage` to the import, and adding a `<Route>`. Because all the other pieces existed, the bug looked like a data problem, not a routing problem.
+
+### Investigation Steps
+
+1. **Observe:** Navigate to `/user/order/abc123` — blank page, no error.
+2. **Blank + no error = no route matched.** Check App.jsx for `/user/order`.
+3. **Grep App.jsx for 'order':** No results under routes section.
+4. **Check Routes.js:** `OrderDetailsPage` IS exported.
+5. **Check App.jsx imports:** `OrderDetailsPage` is NOT imported.
+6. **Fix:** Add to import + add `<Route path="/user/order/:id">`.
+
+### Root Cause
+
+```
+OrderDetailsPage     exists and is correct          ✅
+Routes.js export     correct                         ✅
+ProfileContent link  /user/order/${id}               ✅
+App.jsx import       OrderDetailsPage missing        ❌
+App.jsx route        /user/order/:id missing         ❌
+
+Result: URL exists, page exists, but no route connects them → blank
+```
+
+### The Fix
+
+```jsx
+// App.jsx — AFTER
+import { ..., OrderDetailsPage } from './Routes.js';  // ← add to import
+
+<Route path="/user/order/:id"
+    element={
+        <ProtectedRoute>
+            <OrderDetailsPage />
+        </ProtectedRoute>
+    }
+/>
+```
+
+### The Lesson
+
+> **A page component has three independent requirements: write it, export it, and register its route.** Missing any one of the three means the page never renders. The most commonly forgotten step is the last one — adding the `<Route>` in `App.jsx`. Always check all three when a page is blank.
+
+> **Blank page + no console error + valid URL = unregistered route.** When React Router finds no matching route, it renders nothing and throws no error. This is distinct from a component crash (shows error boundary) or a data error (shows partial UI). The blank + silence diagnostic always points to `App.jsx` first.
+
+*Last updated: 2026-09-05*

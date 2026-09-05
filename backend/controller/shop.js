@@ -1,6 +1,4 @@
 const express = require("express");
-const path = require("path");
-const fs = require("fs");
 const router = express.Router();
 const Shop = require("../model/shop.js");
 const { upload } = require("../multer");
@@ -15,11 +13,11 @@ const user = require("../model/user.js");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
 const { isSeller } = require("../middleware/auth.js");
 // const { isSeller } = require("../middleware/auth.js");
-// const { uploadToCloudinary } = require("../utils/cloudinary.js");
+const { uploadToCloudinary } = require("../utils/cloudinary.js");
 router.post("/create-shop", upload.single("file"), async (req, res, next) => {
     try {
         console.log("[DEBUG] /create-shop hit — body:", req.body);
-        console.log("[DEBUG] /create-shop file:", req.file ? req.file.filename : "NO FILE");
+        console.log("[DEBUG] /create-shop file:", req.file ? req.file.originalname : "NO FILE");
 
         const { email } = req.body;
 
@@ -37,15 +35,17 @@ router.post("/create-shop", upload.single("file"), async (req, res, next) => {
             return next(new ErrorHandler("Avatar image is required", 400));
         }
 
-        const filename = req.file.filename;
-        const fileUrl = path.join(filename);
-        console.log("[DEBUG] File uploaded successfully:", fileUrl);
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const filename = `shop-${uniqueSuffix}`;
+
+        const uploadResult = await uploadToCloudinary(req.file.buffer, filename, 'shops');
+        console.log("[DEBUG] File uploaded successfully:", uploadResult.secure_url);
 
         const seller = {
             name: req.body.name,
             email: email,
             password: req.body.password,
-            avatar: fileUrl,
+            avatar: uploadResult.secure_url,
             address: req.body.address,
             phoneNumber: req.body.phoneNumber,
             zipCode: req.body.zipCode

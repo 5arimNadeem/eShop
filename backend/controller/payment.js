@@ -24,7 +24,7 @@ router.post(
 
 
 router.get("/stripeapikey", catchAsyncErrors(async (req, res, next) => {
-    res.status(200).json({ stripeApiKey: process.env.STRIPE_PUBLISHABLE_KEY });
+    res.status(200).json({ stripeApiKey: process.env.STRIPE_API_KEY });
 }));
 
 module.exports = router;
