@@ -26,6 +26,26 @@
 - [Getting Started](#-getting-started)
 - [Known Gaps & Roadmap](#-known-gaps--roadmap)
 - [Conclusion](#-conclusion)
+- [Documentation](#-documentation)
+
+---
+
+## 📚 Documentation
+
+This project is documented well beyond the code itself. Five companion volumes, each with a different job:
+
+| Doc | What it is | Read it for |
+|---|---|---|
+| **README.md** *(this file)* | The product and architecture tour — diagrams, API inventory, data model, flows. | What the system does and how it's shaped. |
+| [`project_understanding.md`](./project_understanding.md) | A 14-part deep dive written Feynman-style, containing a **14-finding security audit**, 8 correctness bugs, an alternatives matrix, and a fact-check log separating what was verified from what was inferred. | *Why* each decision was made, and what it cost. |
+| [`bugLearnings.md`](./bugLearnings.md) | **25 bug post-mortems**, each structured OBSERVE → HYPOTHESIZE → TEST → CONCLUDE, with the hypotheses that were ruled out — not just the fix. | How the bugs were actually found. |
+| [`fundamentals.md`](./fundamentals.md) | 44 JavaScript / React / Node / MongoDB fundamentals, **every answer anchored to a real `file:line` in this repo** — including the 17 places the code gets the concept wrong. | The language underneath the framework. |
+| [`redux_explained.md`](./redux_explained.md) | The state layer in nine sections: one-way data flow traced through a single action, Immer, thunks, and the three bugs this repo's string-matched reducers caused. | How state actually moves through the app. |
+| [`debuggingJournal/`](./debuggingJournal/) | The debugging method — Reproduce → Diagnose → Fix → Reflect — with an entry template whose most valuable field is *first hypothesis vs. actual cause*. | The process, not the outcome. |
+
+The honest summary of all six: the application was built fast, then audited slowly. Most of what's
+written above is a record of finding out what I'd actually done — which is why
+[Known Gaps & Roadmap](#-known-gaps--roadmap) is the longest section in this file.
 
 ---
 
@@ -453,13 +473,11 @@ graph LR
     APP --> PAY["/payment"]
     APP --> O["/order"]
     APP --> CV["/conversation"]
-    APP --> MSG["/message ⚠️"]
+    APP --> MSG["/message"]
 
     style APP fill:#7c2d12,stroke:#fdba74,stroke-width:3px,color:#f8fafc
-    style MSG fill:#7f1d1d,stroke:#fca5a5,stroke-dasharray: 5 5,color:#f8fafc
-```
+    ```
 
-> ⚠️ **Currently mis-wired.** `app.js` mounts `model/conversation.js` (a Mongoose model) at `/api/v2/conversation` instead of `controller/conversation.js`, and `controller/message.js` is never mounted at all. The routes below are implemented in the controllers but unreachable until the mounting is corrected. See [Known Gaps](#-known-gaps--roadmap).
 
 ### Request lifecycle
 
@@ -1287,6 +1305,10 @@ JWT_SECRET=your_jwt_secret
 JWT_EXPIRES=7d
 ACTIVATION_SECRET=your_activation_secret
 
+# Base URL of the running frontend. Used to build the activation links that
+# get emailed on signup. Defaults to http://localhost:3000 if unset.
+FRONTEND_URL=http://localhost:3000
+
 SMPT_HOST=smtp.gmail.com
 SMPT_PORT=465
 SMPT_MAIL=you@gmail.com
@@ -1300,7 +1322,9 @@ CLOUDINARY_API_KEY=xxx
 CLOUDINARY_API_SECRET=xxx
 ```
 
-> `backend/config/.env` is gitignored. The `SMPT_` spelling is intentional — it matches the keys read in `utils/sendMail.js`.
+> `.env` files are gitignored by pattern (`.env`, `.env.*`, `*.env`), not by path — the earlier
+> single-path rule did not cover `socket/.env`. The `SMPT_` spelling is intentional: it matches the
+> keys read in `utils/sendMail.js`.
 
 Optionally add `socket/.env` with `PORT=4000` (defaults to 4000 if absent).
 
@@ -1310,6 +1334,141 @@ The frontend reads its API base from `frontend/src/server.js`, not from an env f
 export const server = "http://localhost:8000/api/v2";
 export const backendUrl = "http://localhost:8000/";
 ```
+
+---
+
+## 🔭 Known Gaps & Roadmap
+
+This section is deliberately blunt. The project was built fast to get a full multi-vendor stack
+working end to end, then audited afterwards — the audit is in
+[`project_understanding.md`](./project_understanding.md) (14 security findings) and
+[`bugLearnings.md`](./bugLearnings.md) (25 bug post-mortems). What follows is what is still open.
+
+### 🔴 Security — must be closed before this touches the public internet
+
+| # | Gap | Where | Fix |
+|---|---|---|---|
+| 1 | **Price is client-controlled.** `/payment/process` charges `req.body.amount`, so a cart can be re-priced in devtools before paying. | `controller/payment.js` | Server recomputes the total from product IDs against its own database; the client sends IDs and quantities only. |
+| 2 | **Orders trust the browser.** `/order/create-order` has no auth middleware and accepts `user`, `totalPrice` and `paymentInfo.status` from the request body. No Stripe webhook exists, so nothing ever confirms the charge landed. | `controller/order.js` | Add a signed, idempotent `payment_intent.succeeded` webhook and create orders from *that*, not from the client. |
+| 3 | **No tenant scoping (BOLA/IDOR).** `isSeller` proves *a* seller is logged in, never *which*. Any seller can delete another seller's products — and `deleteImagesByUrl` destroys their Cloudinary assets permanently. | `middleware/auth.js`, `controller/product.js` | Scope the query itself: `findOneAndDelete({ _id, shopId: req.seller._id })`, so an unscoped path doesn't exist. |
+| 4 | **Order history is publicly readable by ID.** `/order/get-all-orders/:userId` and `/get-seller-all-orders/:shopId` are unauthenticated. | `controller/order.js` | Derive the ID from `req.user`/`req.seller`, never from the URL. |
+| 5 | **Tokens are indistinguishable.** User and shop JWTs use the same secret and the same `{id}` payload, so nothing in the token says which it is. Currently protected only by an accident of ObjectId allocation. | `model/user.js`, `model/shop.js` | Put a `role` claim in the payload and verify it in the guard; separate secrets per token type. |
+| 6 | **Plaintext password inside the activation JWT.** JWTs are base64, not encrypted, so the raw password sits in an email and in any mail-server log along the way. | `controller/user.js` | Hash before signing, or persist a pending record and email an opaque token. |
+| 7 | **No baseline hardening.** No `helmet`, no rate limiting, no `mongo-sanitize`. Login and the outbound-email signup endpoint are both unthrottled. | `app.js` | Add all three; rate-limit auth and email paths specifically. |
+| 8 | **Socket server has no authentication.** Any client can connect and register as any user ID. | `socket/index.js` | Verify the JWT in the handshake. |
+
+### 🟠 Correctness bugs still open
+
+- **Split orders each carry the full cart total.** A three-shop cart produces three orders each billed
+  the whole amount, so commission is computed on money that was never collected. — `controller/order.js`
+- **Seller balance is overwritten, not accumulated** (`=` where `+=` belongs), so each delivery replaces
+  the previous balance. — `controller/order.js`
+- **`forEach(async …)` in three places.** The promise is discarded, so the HTTP response is sent before
+  the stock writes land, and any rejection becomes an unhandled rejection — which this process treats as
+  fatal. — `controller/order.js`
+- **`default: Date.now()` in eight places.** The parentheses make it evaluate **once at module load**, so
+  every document created in a given process shares the server's boot timestamp. `Product.find().sort({createdAt:-1})`
+  is therefore sorting by a constant. `model/user.js` gets it right. — see [`fundamentals.md`](./fundamentals.md) Q49
+- **`===` on ObjectIds.** Two live instances comparing object references instead of values, so the
+  duplicate-review guard never fires and address editing silently appends. — `controller/product.js`, `controller/user.js`
+- **`Database.js` retry resolves on failure.** The catch block schedules a `setTimeout` retry and returns
+  normally, so the promise `server.js` awaits resolves, `✅ Database connected` prints, and the server
+  listens with **no database**. This defeats the startup ordering that `bugLearnings.md` Ch. 4 documents
+  fixing — the fix was incomplete. — `db/Database.js`
+- **`findByIdAndUpdate` without `new: true`** (it's commented out), so the avatar update responds with the
+  pre-update document and the UI shows a stale image. — `controller/user.js`
+- **Response sent before work completes** in `/order-refund-success`, which can then attempt a second
+  response and trigger `ERR_HTTP_HEADERS_SENT`. — `controller/order.js`
+
+### 🟡 Architectural debt
+
+- **The app cannot be deployed without a code edit.** Four hardcoded `localhost` URLs:
+  `frontend/src/server.js`, the socket endpoint in `pages/UserInbox.jsx` **and**
+  `components/Shop/DashboardMessages.jsx`, plus CORS origins in `app.js` and `socket/index.js`. This is
+  the blocking prerequisite for the container topology described above.
+- **Redux is doing an HTTP cache's job.** `products`, `event` and `order` are server responses with no
+  staleness policy, de-duplication or invalidation — which is why `window.location.reload()` appears 14
+  times as a substitute for cache invalidation. RTK Query is the right tool. See
+  [`redux_explained.md`](./redux_explained.md) §B.2.
+- **Reducers match on raw strings**, so a one-character typo is a silent no-op rather than an error.
+  Three live bugs from this. `createSlice` makes them unrepresentable. See `redux_explained.md` §B.7.
+- **`UserInbox.jsx` and `DashboardMessages.jsx` are 98% identical** (441 and 442 lines). The copy-paste
+  introduced a real bug, since fixed. Both should collapse into one `useChat(currentUserId, endpoint)` hook.
+- **`ProfileContent.jsx` is 780 lines** holding four unrelated screens — profile form, orders grid,
+  refunds grid and address book. Should be four components.
+- **No indexes.** `{"user._id"}`, `{"cart.shopId"}` and `{shopId}` are unindexed collection scans on the
+  three hottest read paths.
+- **Denormalisation applied too broadly.** Snapshotting order line items is correct — it freezes the
+  purchase price. Snapshotting the whole `shop` object into every product is not: a rename leaves stale
+  copies with no update path. The rule is *snapshot what must be frozen, reference what must stay current.*
+- **Socket state is in-memory**, so the realtime layer cannot scale past one process. Needs the Redis adapter.
+- **StrictMode is disabled** (`frontend/src/index.js`) because the app fails under it — the uncleaned
+  socket listeners double up. The listeners are the bug; StrictMode is the smoke alarm.
+- **No error boundaries anywhere**, so any render-time throw blanks the whole page.
+- **No pagination.** Every product and every order is fetched in full.
+
+### ⚪ Not yet built
+
+- **Admin tier** — `User.role` and `getAllOrdersOfAdmin` exist client-side, but `isAdmin` is not exported
+  from `middleware/auth.js` and no admin route is mounted. The [Admin Flow](#-admin-flow) above is the
+  intended design, not shipped behaviour.
+- **Password reset** — `resetPasswordToken` and `resetPasswordTime` are on both models; no endpoint uses them.
+- **Test suite** — zero tests. `@testing-library/*` and a working Jest debug configuration in
+  `.vscode/launch.json` are already wired; the tests themselves are item one on the roadmap. The first
+  ones would be **integration tests on the money path**, because every finding in the table above converts
+  directly into a regression test.
+- **CI/CD, Docker, deployment** — described above, not implemented.
+- **TypeScript** — the single change that would have prevented the most bugs in this codebase.
+- **Observability** — no structured logging, no APM, no error tracking.
+
+### Order I would actually fix these in
+
+1. Findings 1–4 above — anything that lets a stranger take goods or read another user's data.
+2. Integration tests covering exactly those four, so they cannot come back.
+3. The correctness bugs — `forEach(async)`, the split-order total, the seller balance, `Date.now()`.
+4. Environment-driven configuration, which unblocks deployment.
+5. `createSlice` / RTK Query, which deletes a whole class of bug by construction.
+6. Only then the component refactors.
+
+Security first, then the tests that keep it fixed, then correctness, then architecture. Refactoring a
+codebase that can still be robbed is the wrong order.
+
+---
+
+## 🏁 Conclusion
+
+The interesting problem in this project was not authentication or payments — both are well-trodden. It
+was **"whose order is this?"** A cart containing items from three different shops is not one order; it
+is three, each with its own seller, its own fulfilment state and its own commission. Getting that split
+right shaped the data model, the dashboard queries and the payment flow — and getting the *totals* of
+that split wrong is still the most instructive bug in the repository, because the architecture is right
+and one line of arithmetic isn't.
+
+**What I would do differently, concretely:**
+
+- **Draw the trust boundary before writing the first route.** Every one of the security findings above
+  comes from the same root cause: the client was treated as a source of truth. Deciding up front that
+  prices, identities and payment status are *server-derived, always* would have prevented six of the
+  eight in one decision.
+- **Environment-driven configuration from the first commit.** Four hardcoded URLs are the only thing
+  standing between this and a deployed app, and they cost nothing to avoid on day one.
+- **A service layer between controllers and models.** The controllers are doing routing, validation,
+  business logic and persistence at once, which is why one is 780 lines and why the same bug appears in
+  three places.
+- **Tests alongside features, not after.** Not for coverage — for the money path specifically. Twenty
+  percent coverage concentrated on payments and authorization is worth far more than ninety percent
+  spread evenly over getters.
+- **TypeScript.** A meaningful fraction of the bugs in `bugLearnings.md` are shape mismatches between
+  what one file sends and what another expects. A type checker finds those at compile time for free.
+
+**What I would build next:** the Stripe webhook, because it fixes finding #2 and a real non-attacker bug
+at the same time — today, if a buyer closes the tab after paying but before the order request fires,
+the money is taken and no order exists. Then tenant-scoped queries, then the test suite.
+
+The most valuable thing this project produced was not the application. It was the habit of going back
+through working code and asking *why* it works — which is how a 14-finding security audit and 25 bug
+post-mortems came out of a six-day build, and why I can tell you what is wrong with it in more detail
+than I can tell you what is right.
 
 ---
 
