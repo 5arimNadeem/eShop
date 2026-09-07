@@ -1,1 +1,0 @@
-As i click on the product image i redirect to the product details page but the data is not loaded 

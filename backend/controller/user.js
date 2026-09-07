@@ -38,7 +38,11 @@ router.post("/create-user", upload.single("file"), async (req, res, next) => {
         };
 
         const activationToken = createActivationToken(user);
-        const activationUrl = `https://devxcom.vercel.app/activation/${activationToken}`;
+        // Env-driven so the link points at whichever frontend is actually running.
+        // This was hardcoded to the Vercel host, which made local signup impossible
+        // to complete: the emailed link left the machine entirely.
+        const clientUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const activationUrl = `${clientUrl}/activation/${activationToken}`;
 
         try {
             await sendEmail({

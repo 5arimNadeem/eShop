@@ -2,4 +2,28 @@
 # debug config — keeps your logged-in session between debug runs.
 .vscode/.chrome-profile/
 /.claude/.claude/
-backend/config/.env
+
+# Secrets — pattern-based, not path-based.
+# The old single entry (backend/config/.env) did not cover socket/.env,
+# so a new service's secrets would have been committed on day one.
+.env
+.env.*
+*.env
+
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+
+# Pre-Cloudinary upload leftovers. Nothing writes here any more
+# (multer.js uses memoryStorage), but app.js still mounts uploads/
+# as static for legacy bare-filename image paths, so the files stay
+# on disk locally — they are just no longer tracked.
+backend/tmp/
+backend/uploads/
+
+# Local scratch notes
+backend/debug.txt
+techdebt.txt

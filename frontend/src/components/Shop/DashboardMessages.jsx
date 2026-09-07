@@ -103,8 +103,12 @@ const DashboardMessages = () => {
             conversationId: currentChat._id,
         };
 
+        // `members` is an array of ID *strings*, so compare the string directly.
+        // This previously read `member.id`, which is always undefined on a string —
+        // the predicate was always true and receiverId became members[0], often the
+        // seller themselves, so seller -> buyer messages were emitted to the wrong socket.
         const receiverId = currentChat.members.find(
-            (member) => member.id !== seller._id
+            (member) => member !== seller._id
         );
 
         socketId.emit("sendMessage", {

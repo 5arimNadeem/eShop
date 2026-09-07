@@ -4,34 +4,24 @@ const Shop = require("../model/shop.js");
 const { upload } = require("../multer");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendMail.js");
-const sendToken = require("../utils/jwtToken.js");
-const catchAsyncError = require("../middleware/catchAsyncErrors.js");
-const ErrorHandler = require("../utils/ErrorHandler.js");
-// const { isAuthenticated } = require("../middleware/auth.js")
-const sendShopToken = require("../utils/shopToken.js");
-const user = require("../model/user.js");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
+const ErrorHandler = require("../utils/ErrorHandler.js");
+const sendShopToken = require("../utils/shopToken.js");
 const { isSeller } = require("../middleware/auth.js");
-// const { isSeller } = require("../middleware/auth.js");
 const { uploadToCloudinary } = require("../utils/cloudinary.js");
 router.post("/create-shop", upload.single("file"), async (req, res, next) => {
     try {
-        console.log("[DEBUG] /create-shop hit — body:", req.body);
-        console.log("[DEBUG] /create-shop file:", req.file ? req.file.originalname : "NO FILE");
-
         const { email } = req.body;
 
-        // 🔍 CHECKPOINT 1: Is the email already registered?
         const sellerEmail = await Shop.findOne({ email });
-        console.log("[DEBUG] sellerEmail found:", sellerEmail ? "YES - rejecting" : "NO - continuing");
 
         if (sellerEmail) {
             return next(new ErrorHandler("User already exist", 400));
         }
 
-        // 🔍 CHECKPOINT 2: Guard against missing file upload
+        // Guard against a missing file upload: uploadToCloudinary needs a Buffer,
+        // and req.file is undefined if the client omitted the multipart field.
         if (!req.file) {
-            console.log("[DEBUG] No file uploaded — returning error");
             return next(new ErrorHandler("Avatar image is required", 400));
         }
 
@@ -39,7 +29,6 @@ router.post("/create-shop", upload.single("file"), async (req, res, next) => {
         const filename = `shop-${uniqueSuffix}`;
 
         const uploadResult = await uploadToCloudinary(req.file.buffer, filename, 'shops');
-        console.log("[DEBUG] File uploaded successfully:", uploadResult.secure_url);
 
         const seller = {
             name: req.body.name,
@@ -51,10 +40,11 @@ router.post("/create-shop", upload.single("file"), async (req, res, next) => {
             zipCode: req.body.zipCode
         };
 
-        // 🔍 CHECKPOINT 3: Building activation token
         const activationToken = createActivationToken(seller);
-        const activationUrl = `http://localhost:3000/seller/activation/${activationToken}`;
-        console.log("[DEBUG] Activation URL created — sending email to:", seller.email);
+        // Same env-driven client URL as the user flow (controller/user.js).
+        // Previously these two controllers pointed at different environments.
+        const clientUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const activationUrl = `${clientUrl}/seller/activation/${activationToken}`;
 
         try {
             await sendEmail({
@@ -62,17 +52,14 @@ router.post("/create-shop", upload.single("file"), async (req, res, next) => {
                 subject: "Activate Your Shop",
                 message: `Hello ${seller.name},\n\t Please click on the link below to activate your account:\n\n${activationUrl}`,
             });
-            console.log("[DEBUG] Email sent successfully");
             res.status(201).json({
                 success: true,
                 message: `Please check your email:-\n\t${seller.email} to activate your account`,
             });
         } catch (error) {
-            console.log("[DEBUG] Email sending FAILED:", error.message);
             return next(new ErrorHandler(error.message, 500));
         }
     } catch (error) {
-        console.log("[DEBUG] Outer catch error:", error.message);
         return next(new ErrorHandler(error.message, 400));
     }
 });
@@ -86,9 +73,8 @@ const createActivationToken = (seller) => {
 // Activate shop user
 router.post(
     "/activation",
-    catchAsyncError(async (req, res, next) => {
+    catchAsyncErrors(async (req, res, next) => {
         try {
-            console.log("[DEBUG] /shop/activation hit");
             const { activationToken } = req.body;
 
             const newSeller = jwt.verify(
@@ -101,15 +87,14 @@ router.post(
             }
 
             const { name, email, password, avatar, address, phoneNumber, zipCode } = newSeller;
-            console.log("[DEBUG] Token decoded — email:", email);
 
             let seller = await Shop.findOne({ email });
             if (seller) {
                 return next(new ErrorHandler("User already exists", 400));
             }
 
-            // 🔍 CHECKPOINT 4: THIS is where the DB record is created
-            console.log("[DEBUG] Creating seller in DB...");
+            // This is where the DB record is actually created — signup only
+            // signed a token, it did not persist anything.
             seller = await Shop.create({
                 name,
                 email,
@@ -119,11 +104,13 @@ router.post(
                 phoneNumber,
                 zipCode
             });
-            console.log("[DEBUG] Seller created in DB — ID:", seller._id);
 
-            sendToken(seller, 201, res);
+            // Must be sendShopToken, not sendToken: the two helpers differ only in
+            // the cookie they set (seller_token vs token). Using sendToken here put a
+            // shop id into the *user* cookie, so a freshly activated seller was not
+            // logged in as a seller at all.
+            sendShopToken(seller, 201, res);
         } catch (error) {
-            console.log("[DEBUG] Activation catch error:", error.message);
             return next(new ErrorHandler(error.message, 500));
         }
     })
@@ -133,7 +120,7 @@ router.post(
 
 router.post(
     "/login-shop",
-    catchAsyncError(async (req, res, next) => {
+    catchAsyncErrors(async (req, res, next) => {
         try {
             const { email, password } = req.body;
 
@@ -183,11 +170,16 @@ router.get(
 );
 
 // logout shop 
-router.get("/logout", catchAsyncError(async (req, res, next) => {
+router.get("/logout", catchAsyncErrors(async (req, res, next) => {
     try {
+        // Attributes must mirror the ones the cookie was set with in
+        // utils/shopToken.js, otherwise the browser can keep the original
+        // alongside this one instead of replacing it.
         res.cookie("seller_token", null, {
             expires: new Date(Date.now()),
             httpOnly: true,
+            sameSite: "none",
+            secure: true,
         });
         res.status(200).json({
             success: true,
@@ -223,7 +215,10 @@ router.put(
         try {
             const { name, description, address, phoneNumber, zipCode } = req.body;
 
-            const shop = await Shop.findOne(req.seller._id);
+            // findById, not findOne: findOne expects a filter *object*. Passing a bare
+            // ObjectId gives it no usable query keys, so it degenerated toward findOne({})
+            // and returned an arbitrary shop — whose details were then overwritten below.
+            const shop = await Shop.findById(req.seller._id);
 
             if (!shop) {
                 return next(new ErrorHandler("User not found", 400));

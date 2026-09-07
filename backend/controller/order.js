@@ -102,53 +102,6 @@ router.get(
 
 //update order status of seller
 
-// router.put(
-//   "/update-order-status/:id",
-//   isSeller,
-//   catchAsyncErrors(async (req, res, next) => {
-//     try {
-//         const order = await Order.findById(req.params.id);
-//       if (!order) {
-//         return next(new ErrorHandler("Order not found", 404));
-//       }
-
-//       if(req.body.status = "Transferred to delivery partner"){
-//         order.cart.forEach(async(o)=>{
-//             await updateOrder(o._id,o.qty);
-//         });
-//       }
-
-//         order.status = req.body.status;
-//       if(req.body.status === "Delivered") {
-//         order.deliveredAt = Date.now();
-//         order.paymentInfo.status = "Succeeded";
-//       }
-
-//       await order.save({ validateBeforeSave: false });
-
-//       res.status(200).json({
-//         success: true,
-//         message: "Order status updated successfully",
-//         order: order,
-//       });
-
-//       async function updateOrder(id,qty){
-//         const product = await Product.findById(id);
-//         product.stock -= qty;
-//         product.sold += qty;
-
-//         await product.save({validateBeforeSave: false});
-//       }
-
-
-
-//     } catch (error) {
-//       return next(new ErrorHandler(error.message, 500));
-//     }
-//   })
-// );
-
-
 router.put(
     "/update-order-status/:id",
     isSeller,
