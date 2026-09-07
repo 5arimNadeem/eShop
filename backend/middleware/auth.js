@@ -36,3 +36,30 @@ exports.isSeller = catchAsyncErrors(async (req, res, next) => {
     next();
 }
 );
+
+exports.isAdmin = catchAsyncErrors(async (req, res, next) => {
+    const { token } = req.cookies;
+
+    if (!token) {
+        return next(new ErrorHandler("Please login to access this resource", 401));
+    }
+
+    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decodedData.id);
+
+    if (!user) {
+        return next(new ErrorHandler("Please login to access this resource", 401));
+    }
+
+    if (user.role !== "Admin") {
+        return next(
+            new ErrorHandler(`${user.role} is not allowed to access this resource`, 403)
+        );
+    }
+
+    req.user = user;
+
+    next();
+}
+);

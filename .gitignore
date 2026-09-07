@@ -27,3 +27,10 @@ backend/uploads/
 # Local scratch notes
 backend/debug.txt
 techdebt.txt
+
+# Personal study notes — kept local, not part of the published repo.
+# The Documentation table in README.md still links to these; those links
+# only resolve for someone who has the files locally.
+fundamentals.md
+project_understanding.md
+redux_explained.md

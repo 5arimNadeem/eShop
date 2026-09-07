@@ -7,8 +7,8 @@ const sendEmail = require("../utils/sendMail.js");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
 const ErrorHandler = require("../utils/ErrorHandler.js");
 const sendShopToken = require("../utils/shopToken.js");
-const { isSeller } = require("../middleware/auth.js");
-const { uploadToCloudinary } = require("../utils/cloudinary.js");
+const { isSeller, isAdmin } = require("../middleware/auth.js");
+const { uploadToCloudinary, deleteImagesByUrl } = require("../utils/cloudinary.js");
 router.post("/create-shop", upload.single("file"), async (req, res, next) => {
     try {
         const { email } = req.body;
@@ -235,6 +235,50 @@ router.put(
             res.status(201).json({
                 success: true,
                 shop,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+// all sellers — admin only
+router.get(
+    "/admin-all-sellers",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const sellers = await Shop.find().sort({ createdAt: -1 });
+
+            res.status(200).json({
+                success: true,
+                sellers,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+// delete a seller — admin only
+router.delete(
+    "/delete-seller/:id",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const seller = await Shop.findById(req.params.id);
+
+            if (!seller) {
+                return next(new ErrorHandler("Seller not found with this id", 404));
+            }
+
+            await deleteImagesByUrl([seller.avatar]);
+
+            await Shop.findByIdAndDelete(req.params.id);
+
+            res.status(200).json({
+                success: true,
+                message: "Seller deleted successfully!",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));

@@ -20,6 +20,12 @@ import {
   ShopWithDrawMoney,
   ShopInboxPage
 } from "./ShopRoutes.js";
+
+import {
+  AdminLoginPage,
+  AdminDashboardUsers,
+  AdminDashboardSellers
+} from "./AdminRoutes.js";
 import { ToastContainer } from "react-toastify";
 import Store from "./redux/store.js";
 import { loadSeller, loadUser } from "./redux/actions/user.js";
@@ -28,6 +34,7 @@ import axios from 'axios';
 import { server } from './server.js';
 import ProtectedRoute from "./routes/ProtectedRoute.js"
 import SellerProtectedRoute from "./routes/SellerProtectedRoute.js"
+import AdminProtectedRoute from "./routes/AdminProtectedRoute.js"
 import { getAllEvents } from './redux/actions/event.js'
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
@@ -265,7 +272,25 @@ const App = () => {
 
         <Route path="/shop/preview/:id" element={<ShopPreviewPage />} />
 
+        {/* admin routes */}
 
+        <Route path="/admin-login" element={<AdminLoginPage />} />
+
+        <Route path="/admin/users"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboardUsers />
+            </AdminProtectedRoute>
+          }
+        />
+
+        <Route path="/admin/sellers"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboardSellers />
+            </AdminProtectedRoute>
+          }
+        />
 
       </Routes>
       <ToastContainer position="top-center" autoClose={3000} />

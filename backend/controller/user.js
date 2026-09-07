@@ -7,7 +7,7 @@ const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendMail.js");
 const sendToken = require("../utils/jwtToken.js");
 const catchAsyncError = require("../middleware/catchAsyncErrors.js");
-const { isAuthenticated } = require("../middleware/auth.js");
+const { isAuthenticated, isAdmin } = require("../middleware/auth.js");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
 const { uploadToCloudinary, deleteImagesByUrl } = require("../utils/cloudinary.js");
 
@@ -131,6 +131,38 @@ router.post(
             }
 
             sendToken(user, 200, res);
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+// admin login
+router.post(
+    "/login-admin",
+    catchAsyncError(async (req, res, next) => {
+        try {
+            const { email, password } = req.body;
+
+            if (!email || !password) {
+                return next(new ErrorHandler("Please enter email and password", 400));
+            }
+
+            const admin = await User.findOne({ email, role: "Admin" }).select("+password");
+
+            // One message for both "no admin with this email" and "wrong password",
+            // so this endpoint can't be used to discover which accounts are admins.
+            if (!admin) {
+                return next(new ErrorHandler("Invalid email or password", 401));
+            }
+
+            const isPasswordValid = await admin.comparePassword(password);
+
+            if (!isPasswordValid) {
+                return next(new ErrorHandler("Invalid email or password", 401));
+            }
+
+            sendToken(admin, 200, res);
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
@@ -387,6 +419,55 @@ router.get(
             res.status(201).json({
                 success: true,
                 user,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+
+// all users — admin only
+router.get(
+    "/admin-all-users",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const users = await User.find().sort({ createdAt: -1 });
+
+            res.status(200).json({
+                success: true,
+                users,
+            });
+        } catch (error) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    })
+);
+
+// delete a user — admin only
+router.delete(
+    "/delete-user/:id",
+    isAdmin,
+    catchAsyncErrors(async (req, res, next) => {
+        try {
+            const user = await User.findById(req.params.id);
+
+            if (!user) {
+                return next(new ErrorHandler("User not found with this id", 404));
+            }
+
+            if (user._id.toString() === req.user._id.toString()) {
+                return next(new ErrorHandler("You cannot delete your own admin account", 400));
+            }
+
+            await deleteImagesByUrl([user.avatar]);
+
+            await User.findByIdAndDelete(req.params.id);
+
+            res.status(200).json({
+                success: true,
+                message: "User deleted successfully!",
             });
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));

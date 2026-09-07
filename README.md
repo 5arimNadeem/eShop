@@ -114,18 +114,18 @@ graph TD
     subgraph Clients["👥 Clients"]
         B["🛒 Buyer<br/>Storefront"]
         S["🏪 Seller<br/>Dashboard"]
-        A["🛡️ Admin<br/>(planned)"]
+        A["🛡️ Admin<br/>Console"]
     end
 
     subgraph Frontend["⚛️ React SPA — :3000"]
-        R["React Router v7<br/>Routes.js / ShopRoutes.js"]
-        RX["Redux Toolkit Store<br/>user · seller · products<br/>event · cart · wishlist · order"]
+        R["React Router v7<br/>Routes.js / ShopRoutes.js<br/>AdminRoutes.js"]
+        RX["Redux Toolkit Store<br/>user · seller · products · event<br/>cart · wishlist · order · admin"]
         LS["localStorage<br/>cart + wishlist"]
     end
 
     subgraph API["🚂 Express REST API — :8000"]
         MW["Middleware<br/>cors · cookieParser · json"]
-        AUTH["Auth Guards<br/>isAuthenticated · isSeller"]
+        AUTH["Auth Guards<br/>isAuthenticated · isSeller · isAdmin"]
         CTRL["Controllers<br/>user · shop · product · event<br/>coupon · order · payment<br/>conversation · message"]
         ERR["Global ErrorHandler"]
     end
@@ -188,13 +188,14 @@ graph LR
     subgraph Seller["🏪 Seller"]
         SE["Cookie: seller_token<br/>Guard: isSeller<br/>Collection: shops"]
     end
-    subgraph Admin["🛡️ Admin (planned)"]
+    subgraph Admin["🛡️ Admin"]
         AD["Cookie: token + role<br/>Guard: isAdmin<br/>Collection: users"]
     end
     BU -->|"can also hold"| SE
+    BU -->|"role: Admin promotes to"| AD
     style BU fill:#1e3a5f,stroke:#7dd3fc,color:#f8fafc
     style SE fill:#14532d,stroke:#86efac,color:#f8fafc
-    style AD fill:#7f1d1d,stroke:#fca5a5,stroke-dasharray: 5 5,color:#f8fafc
+    style AD fill:#7f1d1d,stroke:#fca5a5,color:#f8fafc
 ```
 
 #### 🛒 Buyer
@@ -220,9 +221,15 @@ graph LR
 - Shop settings (avatar, description, address) and a public shop preview page.
 - Live inbox for customer conversations.
 
-#### 🛡️ Admin *(designed, not yet wired)*
+#### 🛡️ Admin
 
-The schema and client-side plumbing anticipate an admin tier — `User.role` exists, `getAllOrdersOfAdmin` is implemented in the Redux layer, and `order.js` already imports an `isAdmin` guard. **The server side is not built yet:** `isAdmin` is not exported from `middleware/auth.js`, and no `/order/admin-all-orders` route exists. The [Admin Flow](#-admin-flow) below documents the intended design; see [Known Gaps](#-known-gaps--roadmap) for what remains.
+- An admin is a `User` document with `role: "Admin"`, reusing the buyer's `token` cookie — no third token, no separate collection. Promoted out of band with `npm run make-admin`.
+- Dedicated login at `/admin-login` (`POST /user/login-admin`) that filters on the role in the query, so a non-admin never receives a cookie from it.
+- Every admin route is gated by `isAdmin`, which re-reads the role from MongoDB on each request rather than trusting a claim in the token.
+- Roster of every registered user and every vendor shop, newest first.
+- Remove a user or a vendor, including best-effort Cloudinary avatar cleanup. An admin cannot delete their own account.
+
+Order oversight, withdrawal approval, and revenue analytics remain unbuilt — see the [Admin Flow](#-admin-flow) and [Known Gaps](#-known-gaps--roadmap).
 
 ---
 
@@ -518,6 +525,9 @@ sequenceDiagram
 | DELETE | `/delete-user-address/:id` | user | Remove address |
 | PUT | `/update-user-password` | user | Change password |
 | GET | `/user-info/:id` | — | Public user info (for chat) |
+| POST | `/login-admin` | — | Admin login; role-filtered, sets `token` cookie |
+| GET | `/admin-all-users` | admin | Every user, newest first |
+| DELETE | `/delete-user/:id` | admin | Remove user + Cloudinary avatar |
 
 ### `/shop`
 | Method | Endpoint | Auth | Description |
@@ -529,6 +539,8 @@ sequenceDiagram
 | GET | `/logout` | seller | Clear seller cookie |
 | GET | `/get-shop-info/:id` | — | Public shop profile |
 | PUT | `/update-seller-info` | seller | Shop settings |
+| GET | `/admin-all-sellers` | admin | Every shop, newest first |
+| DELETE | `/delete-seller/:id` | admin | Remove shop + Cloudinary avatar |
 
 ### `/product`
 | Method | Endpoint | Auth | Description |
@@ -643,8 +655,8 @@ sequenceDiagram
 | Tool | Version | Purpose |
 |---|---|---|
 | React | 19.x (CRA) | UI |
-| Redux Toolkit + react-redux | 2.x / 9.x | Global state — 7 slices |
-| React Router | 7.x | Routing via `Routes.js` / `ShopRoutes.js` |
+| Redux Toolkit + react-redux | 2.x / 9.x | Global state — 8 slices |
+| React Router | 7.x | Routing via `Routes.js` / `ShopRoutes.js` / `AdminRoutes.js` |
 | Tailwind CSS | 3.4 | Styling + shared `styles/styles.js` tokens |
 | MUI + MUI X DataGrid | 9.x | Dashboard tables |
 | Axios | 1.x | HTTP with `withCredentials: true` |
@@ -1034,7 +1046,14 @@ sequenceDiagram
 
 ## 🛡️ Admin Flow
 
-> **Status: designed, not yet implemented.** `User.role` exists in the schema, `getAllOrdersOfAdmin` is written in `redux/actions/order.js`, and `controller/order.js` already imports an `isAdmin` guard — but `isAdmin` is not exported from `middleware/auth.js` and no admin routes are registered. The sequence below is the intended design and the target for the next milestone.
+Administrators oversee platform operations: they see every registered account, every
+vendor, and can remove either. An admin is an ordinary `User` document whose `role` is
+`"Admin"`, authenticated by the same `token` cookie as a shopper — there is no third
+token and no separate collection.
+
+**Status: built.** Login, both listings and both deletions work end-to-end. Order
+oversight, withdrawal approval and revenue analytics are *not* built — see
+[Known Gaps](#-known-gaps--roadmap).
 
 ```mermaid
 %%{init: {'theme':'dark','themeVariables':{'fontSize':'15px','textColor':'#e2e8f0','primaryTextColor':'#f8fafc','lineColor':'#94a3b8','clusterBkg':'#0f172a','clusterBorder':'#475569','noteBkgColor':'#334155','noteTextColor':'#f8fafc','noteBorderColor':'#94a3b8','actorBkg':'#1e293b','actorTextColor':'#f8fafc','signalTextColor':'#e2e8f0','labelBoxBkgColor':'#334155','labelTextColor':'#f8fafc','loopTextColor':'#f8fafc'}}}%%
@@ -1042,50 +1061,95 @@ sequenceDiagram
     actor A as 🛡️ Admin
     participant F as ⚛️ Admin Panel
     participant G as isAdmin guard
-    participant API as 🚂 Express API
+    participant UC as 👤 userController
+    participant SC as 🏪 shopController
     participant DB as 🍃 MongoDB
 
     rect rgb(66, 26, 26)
     Note over A,DB: 1 — Elevated authentication
-    A->>F: Login with admin credentials
-    F->>API: POST /user/login-user
-    API-->>F: Set-Cookie: token (httpOnly)
-    F->>API: any /admin-* route
-    API->>G: verify token AND user.role === "Admin"
-    alt role mismatch
-        G-->>F: 403 — insufficient permissions
+    A->>F: Login as Admin
+    F->>UC: POST /user/login-admin
+    UC->>DB: User.findOne({ email, role: "Admin" })
+    alt no admin with that email, or bad password
+        UC-->>F: 401 — Invalid email or password
     else authorized
-        G->>API: proceed
+        UC-->>F: Set-Cookie: token (httpOnly) · admin login success
     end
     end
 
     rect rgb(23, 42, 69)
-    Note over A,DB: 2 — Platform oversight
-    A->>API: GET /order/admin-all-orders
-    API->>DB: Order.find().sort({ deliveredAt: -1, createdAt: -1 })
-    DB-->>F: every order across every shop
-    A->>API: GET /user/admin-all-users
-    A->>API: GET /shop/admin-all-sellers
+    Note over A,DB: 2 — Every admin request re-checks the role
+    F->>G: any admin route, carrying the token cookie
+    G->>DB: User.findById(token.id)
+    alt user.role !== "Admin"
+        G-->>F: 403 — insufficient permissions
+    else role matches
+        G->>UC: proceed with req.user
+    end
     end
 
     rect rgb(59, 43, 18)
-    Note over A,DB: 3 — Moderation & governance
-    A->>API: DELETE /shop/delete-seller/:id
-    API->>DB: remove shop (+ cascade catalog)
-    A->>API: GET /withdraw/get-all-withdraw-request
-    A->>API: PUT /withdraw/update-withdraw-request/:id
-    API->>DB: mark payout approved, append to transections[]
+    Note over A,DB: 3 — Platform oversight
+    A->>F: View all users
+    F->>UC: GET /user/admin-all-users
+    UC->>DB: User.find().sort({ createdAt: -1 })
+    UC-->>F: Users list
+
+    A->>F: View all sellers
+    F->>SC: GET /shop/admin-all-sellers
+    SC->>DB: Shop.find().sort({ createdAt: -1 })
+    SC-->>F: Sellers list
     end
 
     rect rgb(20, 52, 38)
-    Note over A,DB: 4 — Platform analytics
-    A->>API: aggregate platform revenue
-    API->>DB: sum of 10% service charges across delivered orders
-    DB-->>F: 📊 revenue · sellers · orders · users
+    Note over A,DB: 4 — Moderation
+    A->>F: Delete user
+    F->>UC: DELETE /user/delete-user/:id
+    UC->>UC: refuse if :id is the caller's own account
+    Note right of UC: avatar removed from Cloudinary,<br/>best-effort
+    UC->>DB: User.findByIdAndDelete()
+    UC-->>F: User deleted
+
+    A->>F: Delete seller
+    F->>SC: DELETE /shop/delete-seller/:id
+    SC->>DB: Shop.findByIdAndDelete()
+    SC-->>F: Seller deleted
     end
 ```
 
-**Prerequisites to ship this tier:** export an `isAdmin` middleware, register the admin routes, add a `Withdraw` model and its request lifecycle, and build the admin route tree in the SPA.
+### Creating the first admin
+
+Signup always writes `role: "user"`, and no HTTP route can grant the Admin role — by
+design, since an endpoint that hands out admin rights is a permanent liability. Promote
+an already-registered account from the shell instead:
+
+```bash
+cd backend
+npm run make-admin -- you@example.com
+```
+
+Then sign in at `/admin-login`.
+
+### Admin surface in the SPA
+
+| Route | Guard | Component |
+|---|---|---|
+| `/admin-login` | — | `AdminLoginPage` → `components/Admin/AdminLogin.jsx` |
+| `/admin/users` | `AdminProtectedRoute` | `AdminDashboardUsers` → `components/Admin/AllUsers.jsx` |
+| `/admin/sellers` | `AdminProtectedRoute` | `AdminDashboardSellers` → `components/Admin/AllSellers.jsx` |
+
+`AdminProtectedRoute` reads the existing `user` slice and requires
+`isAuthenticated && user.role === "Admin"`, so admin identity costs no extra request —
+`loadUser()` already runs on mount. The `admin` slice holds only the two lists.
+
+**Two deliberate guards.** An admin cannot delete their own account (checked in
+`delete-user`, and the row's button is disabled in `AllUsers.jsx`) — otherwise the last
+administrator could lock everyone out permanently. And `login-admin` returns the same
+`"Invalid email or password"` whether the email belongs to no admin or the password is
+simply wrong, so the endpoint cannot be used to enumerate which accounts hold the role.
+
+**Not built yet:** order oversight, withdrawal approval, revenue analytics, and cascade
+cleanup when a seller is deleted (their products, events and coupons currently survive).
 
 ---
 
@@ -1157,18 +1221,19 @@ frontend/src/
 │   ├── Payment/         # Payment (Stripe / PayPal / COD)
 │   ├── cart/            # Cart drawer
 │   └── Wishlist/        # Wishlist drawer
-├── pages/               # Buyer pages + pages/Shop/ seller pages
+├── pages/               # Buyer pages + pages/Shop/ + pages/Admin/
 ├── redux/               # actions/ · reducers/ · store.js
 ├── static/data.jsx      # Nav & category constants only
 ├── styles/styles.js     # Shared Tailwind class tokens
 ├── server.js            # export const server = ".../api/v2"
 ├── Routes.js            # Buyer route barrel
-└── ShopRoutes.js        # Seller route barrel
+├── ShopRoutes.js        # Seller route barrel
+└── AdminRoutes.js       # Admin route barrel
 ```
 
 Three conventions hold this together:
 
-1. **Barrel route files.** `Routes.js` and `ShopRoutes.js` re-export every page, so `App.jsx` imports from two modules instead of thirty — and adding a page is a one-line change in one predictable place.
+1. **Barrel route files.** `Routes.js`, `ShopRoutes.js` and `AdminRoutes.js` re-export every page, so `App.jsx` imports from three modules instead of thirty — and adding a page is a one-line change in one predictable place.
 2. **Shared style tokens.** `styles/styles.js` exports named Tailwind class strings (`styles.button`, `styles.section`, `styles.productTitle`) so visual changes propagate from a single file rather than requiring a codebase-wide find-and-replace.
 3. **Pages compose, components render.** `pages/` handle routing, guards, and data dispatch; `components/` receive props and render. `ProductCard` is used identically by the home page, the category page, the best-selling page, and the shop preview.
 
@@ -1409,9 +1474,10 @@ working end to end, then audited afterwards — the audit is in
 
 ### ⚪ Not yet built
 
-- **Admin tier** — `User.role` and `getAllOrdersOfAdmin` exist client-side, but `isAdmin` is not exported
-  from `middleware/auth.js` and no admin route is mounted. The [Admin Flow](#-admin-flow) above is the
-  intended design, not shipped behaviour.
+- **Admin tier — partially shipped.** Login, user/seller listings and deletions work; see the
+  [Admin Flow](#-admin-flow). Still missing: platform-wide order oversight, the `Withdraw` model
+  and payout approval lifecycle, revenue analytics, and cascade cleanup on seller deletion —
+  removing a shop today orphans its products, events and coupons.
 - **Password reset** — `resetPasswordToken` and `resetPasswordTime` are on both models; no endpoint uses them.
 - **Test suite** — zero tests. `@testing-library/*` and a working Jest debug configuration in
   `.vscode/launch.json` are already wired; the tests themselves are item one on the roadmap. The first
