@@ -309,7 +309,7 @@ const MessageList = ({
                     className="w-[50px] h-[50px] rounded-full"
                 />
                 {online ? (
-                    <div className="w-[12px] h-[12px] bg-green-400 rounded-full absolute top-[2px] right-[2px]" />
+                    <div className="w-[12px] h-[12px] bg-blue-400 rounded-full absolute top-[2px] right-[2px]" />
                 ) : (
                     <div className="w-[12px] h-[12px] bg-[#c7b9b9] rounded-full absolute top-[2px] right-[2px]" />
                 )}

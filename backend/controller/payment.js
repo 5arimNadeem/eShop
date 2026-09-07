@@ -11,7 +11,7 @@ router.post(
             amount: req.body.amount,
             currency: "usd",
             metadata: {
-                company: "DevXCom",
+                company: "eShop",
             },
         });
 

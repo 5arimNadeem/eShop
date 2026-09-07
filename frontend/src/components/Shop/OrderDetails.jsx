@@ -67,12 +67,12 @@ const OrderDetails = () => {
         <div className={`py-4 min-h-screen ${styles.section}`}>
             <div className="w-full flex items-center justify-between">
                 <div className="flex items-center">
-                    <BsFillBagFill size={30} color="green" />
+                    <BsFillBagFill size={30} color="blue" />
                     <h1 className="pl-2 text-[25px]">Order Details</h1>
                 </div>
                 <Link to="/dashboard-orders">
                     <div
-                        className={`${styles.button} !bg-[green] !rounded-[4px] text-[white] font-[600] !h-[45px] text-[18px]`}
+                        className={`${styles.button} !bg-[blue] !rounded-[4px] text-[white] font-[600] !h-[45px] text-[18px]`}
                     >
                         Order List
                     </div>
@@ -195,7 +195,7 @@ const OrderDetails = () => {
             }
 
             <div
-                className={`${styles.button} mt-5 !bg-[green] !rounded-[4px] text-[white] font-[600] !h-[45px] text-[18px]`}
+                className={`${styles.button} mt-5 !bg-[blue] !rounded-[4px] text-[white] font-[600] !h-[45px] text-[18px]`}
                 onClick={data?.status !== "Processing refund" ? orderUpdateHandler : refundOrderUpdateHandler}
             >
                 Update Status

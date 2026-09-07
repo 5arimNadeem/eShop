@@ -220,7 +220,7 @@ const AllOrders = () => {
             flex: 0.7,
             cellClassName: (params) => {
                 return params.row.status === "Delivered"
-                    ? "greenColor"
+                    ? "blueColor"
                     : "redColor";
             },
         },
@@ -308,7 +308,7 @@ const AllRefundOrders = () => {
             flex: 0.7,
             cellClassName: (params) => {
                 return params.row.status === "Delivered"
-                    ? "greenColor"
+                    ? "blueColor"
                     : "redColor";
             },
         },
@@ -393,7 +393,7 @@ const TrackOrder = () => {
             flex: 0.7,
             cellClassName: (params) => {
                 return params.row.status === "Delivered"
-                    ? "greenColor"
+                    ? "blueColor"
                     : "redColor";
             },
         },

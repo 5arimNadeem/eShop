@@ -636,7 +636,7 @@ templates.
   time depend on a third party's.
 - ⚠️ **5-minute expiry is aggressive.** People do not check email in 5 minutes. Expect support
   tickets. 24 hours is typical.
-- 🐛 **Hardcoded, mismatched URLs.** `user.js:44` points at `https://devxcom.vercel.app` while
+- 🐛 **Hardcoded, mismatched URLs.** `user.js:44` points at `https://eShop.vercel.app` while
   `shop.js:57` points at `http://localhost:3000`. One of them is always wrong. This belongs in an
   env var (`FRONTEND_URL`).
 - ℹ️ Note the env vars are spelled `SMPT_HOST`, `SMPT_MAIL` — that's a typo for SMTP, carried

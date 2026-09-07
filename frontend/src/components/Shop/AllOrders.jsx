@@ -28,7 +28,7 @@ const AllOrders = () => {
             flex: 0.7,
             cellClassName: (params) => {
                 return params.value === "Delivered"
-                    ? "greenColor"
+                    ? "blueColor"
                     : "redColor";
             },
         },
