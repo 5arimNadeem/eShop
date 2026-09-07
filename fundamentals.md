@@ -666,12 +666,24 @@ the wrong reason — if someone later changed `:105` to read `value`, it would s
 | with cleanup | 🟢 `components/Layout/Navbar.jsx:16-25` | `addEventListener` / `removeEventListener` |
 | **no array** | 🔴 `components/Events/Countdown.jsx:8-22` | see below |
 
-**Honest note** — `Countdown.jsx` sets a `setTimeout(() => setTimeLeft(...), 1000)` and has **no
-dependency array**, so: it runs after every render → the timer fires → `setTimeLeft` re-renders → the
-effect runs again → forever. It is an **accidental `setInterval`**, and the only thing stopping it from
-melting the CPU is the `clearTimeout` cleanup at `:21`. Worth adding: `:25` hardcodes
-`new Date('2026-08-08')` and ignores the `data` prop entirely, so every countdown on the site shows the
-same date.
+**Honest note — and this is the most interesting entry in the React bucket, because the bug
+accidentally implements the feature.**
+
+`Countdown.jsx` sets a `setTimeout(() => setTimeLeft(...), 1000)` and has **no dependency array**. So:
+it runs after every render → the timer fires after 1s → `setTimeLeft` re-renders → the effect runs
+again → forever. It is an **accidental `setInterval`** — and that self-perpetuating loop is *the only
+reason the countdown counts down at all*. Add `[]` to "fix" it and the timer fires exactly once, then
+stops dead. The `clearTimeout` cleanup at `:21` is the only thing keeping it from stacking timers.
+
+**Say that out loud** — *"the missing dependency array is a bug, and it's also load-bearing. The honest
+fix isn't adding `[]`, it's a `setInterval` in a `[]` effect with `clearInterval` in the cleanup — which
+states the intent instead of relying on a re-render loop."* Recognising that a bug is holding a feature
+up is a much better answer than spotting the missing array.
+
+**Also, and this one you fixed while preparing** — `calculateTimeLeft` hardcoded
+`new Date('2026-08-08')` and ignored the `data` prop entirely, so **every event on the site displayed
+the same countdown**, and once that date passed they all showed "Time's Up" in red. It now reads
+`data?.Finish_Date`.
 
 **Follow-up** — *"When does the cleanup actually run?"* Before every re-run of the effect, and once on
 unmount. Not just at unmount — that's the part people miss, and it's why the `Countdown` timer doesn't

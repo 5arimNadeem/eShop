@@ -22,7 +22,11 @@ const CountDown = ({ data }) => {
     });
 
     function calculateTimeLeft() {
-        const difference = +new Date('2026-08-08') - +new Date();
+        // Use the event's own finish date. This was hardcoded to '2026-08-08',
+        // so the `data` prop was ignored and every event on the site showed
+        // "Time's Up" once that date passed. An unparseable/missing date gives
+        // NaN, which fails the `> 0` check below and falls back to "Time's Up".
+        const difference = +new Date(data?.Finish_Date) - +new Date();
         let timeLeft = {};
 
         if (difference > 0) {
