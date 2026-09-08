@@ -514,7 +514,7 @@ sequenceDiagram
 ### `/user`
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/create-user` | — | Register; sends activation email |
+| POST | `/register` | — | Register; sends activation email |
 | POST | `/activation` | — | Activate account from token |
 | POST | `/login-user` | — | Login; sets `token` cookie |
 | GET | `/get-user` | user | Current user |
@@ -915,7 +915,7 @@ sequenceDiagram
     rect rgb(23, 42, 69)
     Note over U,M: 1 — Registration & Activation
     U->>F: Submit signup (name, email, password, avatar)
-    F->>API: POST /user/create-user
+    F->>API: POST /user/register
     API->>API: sign activation JWT (short-lived)
     API->>M: send activation link
     M-->>U: 📧 "Activate your account"

@@ -11,10 +11,11 @@ const { isAuthenticated, isAdmin } = require("../middleware/auth.js");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors.js");
 const { uploadToCloudinary, deleteImagesByUrl } = require("../utils/cloudinary.js");
 
-router.post("/create-user", upload.single("file"), async (req, res, next) => {
+
+router.post("/register", upload.single("file"), async (request, response, next) => {
     try {
-        const { name, email, password } = req.body;
-        if (!req.file) {
+        const { name, email, password } = request.body;
+        if (!request.file) {
             return next(new ErrorHandler("Avatar image is required.", 400));
         }
 
@@ -28,7 +29,7 @@ router.post("/create-user", upload.single("file"), async (req, res, next) => {
         const filename = `user-${uniqueSuffix}`;
 
         // Upload to Cloudinary
-        const uploadResult = await uploadToCloudinary(req.file.buffer, filename, 'users');
+        const uploadResult = await uploadToCloudinary(request.file.buffer, filename, 'users');
 
         const user = {
             name: name,
@@ -50,7 +51,7 @@ router.post("/create-user", upload.single("file"), async (req, res, next) => {
                 subject: "Activate Your account",
                 message: `Hello ${user.name},\n\t Please click on the link below to activate your account:\n\n${activationUrl}`,
             });
-            res.status(201).json({
+            response.status(201).json({
                 success: true,
                 message: `Please check your email:-\n\t${user.email} to activate your account`,
             });
@@ -72,9 +73,9 @@ const createActivationToken = (user) => {
 // Activate User
 router.post(
     "/activation",
-    catchAsyncError(async (req, res, next) => {
+    catchAsyncError(async (request, response, next) => {
         try {
-            const { activationToken } = req.body;
+            const { activationToken } = request.body;
             const newUser = jwt.verify(
                 activationToken,
                 process.env.ACTIVATION_SECRET
@@ -99,7 +100,7 @@ router.post(
                 avatar,
             });
 
-            sendToken(user, 201, res);
+            sendToken(user, 201, response);
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
@@ -110,9 +111,9 @@ router.post(
 
 router.post(
     "/login-user",
-    catchAsyncError(async (req, res, next) => {
+    catchAsyncError(async (request, response, next) => {
         try {
-            const { email, password } = req.body;
+            const { email, password } = request.body;
 
             if (!email || !password) {
                 return next(new ErrorHandler("Please enter email and password", 400));
@@ -130,7 +131,9 @@ router.post(
                 return next(new ErrorHandler("Invalid email or password", 401));
             }
 
-            sendToken(user, 200, res);
+            sendToken(user, 200, response);
+            console.table(request.user)
+
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
@@ -140,9 +143,9 @@ router.post(
 // admin login
 router.post(
     "/login-admin",
-    catchAsyncError(async (req, res, next) => {
+    catchAsyncError(async (request, response, next) => {
         try {
-            const { email, password } = req.body;
+            const { email, password } = request.body;
 
             if (!email || !password) {
                 return next(new ErrorHandler("Please enter email and password", 400));
@@ -162,7 +165,7 @@ router.post(
                 return next(new ErrorHandler("Invalid email or password", 401));
             }
 
-            sendToken(admin, 200, res);
+            sendToken(admin, 200, response);
         } catch (error) {
             return next(new ErrorHandler(error.message, 500));
         }
@@ -173,13 +176,13 @@ router.post(
 router.get(
     "/get-user",
     isAuthenticated,
-    catchAsyncErrors(async (req, res, next) => {
+    catchAsyncErrors(async (request, response, next) => {
         try {
-            const user = await User.findById(req.user.id);
+            const user = await User.findById(request.user.id);
             if (!user) {
                 return next(new ErrorHandler("User not found", 404));
             }
-            res.status(200).json({
+            response.status(200).json({
                 success: true,
                 user,
             });
@@ -193,16 +196,16 @@ router.get(
 
 router.post(
     "/logout",
-    catchAsyncError(async (req, res, next) => {
+    catchAsyncError(async (request, response, next) => {
         try {
-            res.cookie("token", null, {
+            response.cookie("token", null, {
                 expires: new Date(Date.now()),
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
                 sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             });
 
-            res.status(200).json({
+            response.status(200).json({
                 success: true,
                 message: "Logged out successfully",
             });
@@ -214,10 +217,10 @@ router.post(
 
 //update user info
 
-router.put("/update-user-info", isAuthenticated, catchAsyncError(async (req, res, next) => {
+router.put("/update-user-info", isAuthenticated, catchAsyncError(async (request, response, next) => {
     try {
 
-        const { email, password, phoneNumber, name } = req.body;
+        const { email, password, phoneNumber, name } = request.body;
         const user = await User.findOne({ email }).select("+password");
 
         if (!user) {
@@ -236,7 +239,7 @@ router.put("/update-user-info", isAuthenticated, catchAsyncError(async (req, res
 
         await user.save();
 
-        res.status(200).json({
+        response.status(200).json({
             success: true,
             message: "User information updated successfully",
             user,
@@ -250,16 +253,16 @@ router.put("/update-user-info", isAuthenticated, catchAsyncError(async (req, res
 
 //update user avatar
 
-router.put("/update-avatar", isAuthenticated, upload.single("image"), catchAsyncError(async (req, res, next) => {
+router.put("/update-avatar", isAuthenticated, upload.single("image"), catchAsyncError(async (request, response, next) => {
 
     try {
 
-        const existsUser = await User.findById(req.user.id);
+        const existsUser = await User.findById(request.user.id);
         if (!existsUser) {
             return next(new ErrorHandler("User not found", 404));
         }
 
-        if (!req.file) {
+        if (!request.file) {
             return next(new ErrorHandler("Avatar image is required.", 400));
         }
 
@@ -271,15 +274,15 @@ router.put("/update-avatar", isAuthenticated, upload.single("image"), catchAsync
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
         const filename = `user-${uniqueSuffix}`;
 
-        const uploadResult = await uploadToCloudinary(req.file.buffer, filename, 'users');
+        const uploadResult = await uploadToCloudinary(request.file.buffer, filename, 'users');
 
         const user = await User.findByIdAndUpdate(
-            req.user.id,
+            request.user.id,
             { avatar: uploadResult.secure_url },
             // { new: true, runValidators: true }
         );
 
-        res.status(200).json({
+        response.status(200).json({
             success: true,
             message: "Avatar updated successfully",
             user,
@@ -294,31 +297,31 @@ router.put("/update-avatar", isAuthenticated, upload.single("image"), catchAsync
 
 // update user addresses
 
-router.put("/update-user-addresses", isAuthenticated, catchAsyncError(async (req, res, next) => {
+router.put("/update-user-addresses", isAuthenticated, catchAsyncError(async (request, response, next) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(request.user.id);
         if (!user) {
             return next(new ErrorHandler("User not found", 404));
         }
 
-        const sameTypeAddress = user.addresses.find((address) => address.addressType === req.body.addressType);
+        const sameTypeAddress = user.addresses.find((address) => address.addressType === request.body.addressType);
         if (sameTypeAddress) {
             return next(new ErrorHandler("Address type already exists", 400));
         }
 
-        const exsistAddress = user.addresses.find((address) => address._id === req.body.id);
+        const exsistAddress = user.addresses.find((address) => address._id === request.body.id);
 
         if (exsistAddress) {
-            Object.assign(exsistAddress, req.body);
+            Object.assign(exsistAddress, request.body);
 
         } else {
             //add the new address to the array'
-            user.addresses.push(req.body);
+            user.addresses.push(request.body);
         }
 
         await user.save();
 
-        res.status(200).json({
+        response.status(200).json({
             success: true,
             message: "User addresses updated successfully",
             user,
@@ -335,11 +338,11 @@ router.put("/update-user-addresses", isAuthenticated, catchAsyncError(async (req
 
 // delete user address
 
-router.delete("/delete-user-address/:id", isAuthenticated, catchAsyncError(async (req, res, next) => {
+router.delete("/delete-user-address/:id", isAuthenticated, catchAsyncError(async (request, response, next) => {
 
     try {
-        const userId = req.user._id;
-        const addressId = req.params.id;
+        const userId = request.user._id;
+        const addressId = request.params.id;
 
         await User.updateOne({
             _id: userId,
@@ -357,7 +360,7 @@ router.delete("/delete-user-address/:id", isAuthenticated, catchAsyncError(async
             return next(new ErrorHandler("User not found", 404));
         }
 
-        res.status(200).json({
+        response.status(200).json({
             success: true,
             message: "User address deleted successfully",
             user,
@@ -373,12 +376,12 @@ router.delete("/delete-user-address/:id", isAuthenticated, catchAsyncError(async
 
 // update user password
 
-router.put("/update-user-password", isAuthenticated, catchAsyncError(async (req, res, next) => {
+router.put("/update-user-password", isAuthenticated, catchAsyncError(async (request, response, next) => {
 
     try {
-        const { oldPassword, newPassword, confirmPassword } = req.body;
+        const { oldPassword, newPassword, confirmPassword } = request.body;
 
-        const user = await User.findById(req.user.id).select("+password");
+        const user = await User.findById(request.user.id).select("+password");
 
         if (!user) {
             return next(new ErrorHandler("User not found", 404));
@@ -398,7 +401,7 @@ router.put("/update-user-password", isAuthenticated, catchAsyncError(async (req,
 
         await user.save();
 
-        res.status(200).json({
+        response.status(200).json({
             success: true,
             message: "Password updated successfully",
         });
@@ -412,11 +415,11 @@ router.put("/update-user-password", isAuthenticated, catchAsyncError(async (req,
 
 router.get(
     "/user-info/:id",
-    catchAsyncErrors(async (req, res, next) => {
+    catchAsyncErrors(async (request, response, next) => {
         try {
-            const user = await User.findById(req.params.id);
+            const user = await User.findById(request.params.id);
 
-            res.status(201).json({
+            response.status(201).json({
                 success: true,
                 user,
             });
@@ -431,11 +434,11 @@ router.get(
 router.get(
     "/admin-all-users",
     isAdmin,
-    catchAsyncErrors(async (req, res, next) => {
+    catchAsyncErrors(async (request, response, next) => {
         try {
             const users = await User.find().sort({ createdAt: -1 });
 
-            res.status(200).json({
+            response.status(200).json({
                 success: true,
                 users,
             });
@@ -449,23 +452,23 @@ router.get(
 router.delete(
     "/delete-user/:id",
     isAdmin,
-    catchAsyncErrors(async (req, res, next) => {
+    catchAsyncErrors(async (request, response, next) => {
         try {
-            const user = await User.findById(req.params.id);
+            const user = await User.findById(request.params.id);
 
             if (!user) {
                 return next(new ErrorHandler("User not found with this id", 404));
             }
 
-            if (user._id.toString() === req.user._id.toString()) {
+            if (user._id.toString() === request.user._id.toString()) {
                 return next(new ErrorHandler("You cannot delete your own admin account", 400));
             }
 
             await deleteImagesByUrl([user.avatar]);
 
-            await User.findByIdAndDelete(req.params.id);
+            await User.findByIdAndDelete(request.params.id);
 
-            res.status(200).json({
+            response.status(200).json({
                 success: true,
                 message: "User deleted successfully!",
             });

@@ -98,7 +98,7 @@ Turn the repro into a test so the fix is permanent. Then write the entry below, 
 ### Symptom
 
 Clicking Submit on the signup page shows the toast `"Something went wrong!"`. Network tab
-shows 500 on `POST /api/v2/user/create-user`.
+shows 500 on `POST /api/v2/user/register`.
 
 The toast text comes from `SignUp.jsx` — `error.response?.data?.message || "Something went
 wrong!"`. **The UI was actively hiding the real error**, which is why step 1 was to leave
@@ -109,7 +109,7 @@ the browser entirely.
 ```bash
 # server: cd backend && node server.js
 # a.png = any small file with a PNG magic header
-curl -s -w '\nHTTP %{http_code}\n' -X POST localhost:8000/api/v2/user/create-user \
+curl -s -w '\nHTTP %{http_code}\n' -X POST localhost:8000/api/v2/user/register \
   -F "file=@a.png;type=image/png" -F "name=Test" \
   -F "email=probe@example.com" -F "password=secret123"
 ```

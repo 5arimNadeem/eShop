@@ -33,7 +33,7 @@ const SignUp = () => {
         newForm.append("file", avatar);
 
 
-        await axios.post(`${server}/user/create-user`, newForm, config).then((res) => {
+        await axios.post(`${server}/user/register`, newForm, config).then((res) => {
             toast.success("user created successfully");
             setName("");
             setEmail("");
