@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 // console.log(bcrypt)
 const jwt = require("jsonwebtoken");
 
+const saltValue = 10
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -49,10 +50,17 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving to database
 userSchema.pre("save", async function () {
+    /* 
+    WHILE UPDATING THE RECORD :
+    
+    It skips re-hashing the password on every save (e.g. when only name or addresses change) by checking if password was actually the field modified.
+
+Returning here just exits the hook early — safe since this is an async pre-save hook, which Mongoose resolves as a promise rather than needing a next() callback.
+    */
     if (!this.isModified("password")) {
         return; // async hooks resolve via promise, never call next()
     }
-    this.password = await bcrypt.hash(this.password, 10);
+    this.password = await bcrypt.hash(this.password, saltValue);
 });
 
 

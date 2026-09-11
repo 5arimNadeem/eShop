@@ -79,6 +79,7 @@ const App = () => {
         <Route path="/best-selling" element={<BestSellingPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/faq" element={<FAQPage />} />
+        {/* user routes  */}
         <Route path="/checkout" element={
           <ProtectedRoute >
             <CheckoutPage />
@@ -99,14 +100,6 @@ const App = () => {
             )
           }
         />
-        <Route path="/user/order/:id"
-          element={
-            <ProtectedRoute>
-              <OrderDetailsPage />
-            </ProtectedRoute>
-          }
-        />
-
         <Route path="/user/order/:id"
           element={
             <ProtectedRoute>
