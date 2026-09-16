@@ -33,7 +33,7 @@ const ProductCard = ({ data, isEvent }) => {
             setClick(false);
         }
     }, [wishlist, data._id]);
-
+    
     const removeFromWishlistHandler = (data) => {
         setClick(!click);
         dispatch(removeFromWishlist(data));
@@ -43,7 +43,7 @@ const ProductCard = ({ data, isEvent }) => {
         setClick(!click);
         dispatch(addToWishlist(data));
     };
-
+    
     const addToCartHandler = (id) => {
         const isItemExists = cart && cart.find((i) => i._id === id);
         if (isItemExists) {
@@ -58,7 +58,7 @@ const ProductCard = ({ data, isEvent }) => {
             }
         }
     };
-
+    
     return (
         <>
             <div className="w-full max-w-xs bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300 p-0 relative group overflow-hidden">

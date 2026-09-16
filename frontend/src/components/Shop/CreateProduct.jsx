@@ -60,21 +60,7 @@ const CreateProduct = () => {
     const handleImageChange = (e) => {
         e.preventDefault()
         const files = Array.from(e.target.files);
-
         setImages((prevImage) => [...prevImage, ...files]);
-
-        // setImages(files);
-        // setImagePreviews([]);
-
-        // files.forEach((file) => {
-        //     const reader = new FileReader();
-        //     reader.onload = () => {
-        //         if (reader.readyState === 2) {
-        //             setImagePreviews((old) => [...old, reader.result]);
-        //         }
-        //     };
-        //     reader.readAsDataURL(file);
-        // });
     };
 
     return (

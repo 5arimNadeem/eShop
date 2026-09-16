@@ -16,10 +16,10 @@ const connectDatabase = async () => {
         console.log('MongoDB connected successfully');
         retryCount = 0; // Reset retry count on successful connection
 
-    } 
+    }
     catch (error) {
         console.error(`MongoDB connection failed (attempt ${retryCount + 1}/${maxRetries}):`, error.message);
-        console.error(`MongoDB connection failed` , error.message);
+        console.error(`MongoDB connection failed`, error.message);
 
 
         if (retryCount < maxRetries) {
@@ -32,6 +32,8 @@ const connectDatabase = async () => {
         }
     }
 };
+
+
 
 // Handle connection events
 mongoose.connection.on('disconnected', () => {

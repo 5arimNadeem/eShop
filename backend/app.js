@@ -17,7 +17,11 @@ app.use("/", express.static("uploads"));
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 
 
+// const PORT = process.env.PORT || 3000;
 
+// if (process.env.NODE_ENV !== 'production') {
+//     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// }
 //config
 if (process.env.NODE_ENV !== "PRODUCTION") {
     require('dotenv').config({ path: 'config/.env' });

@@ -51,7 +51,6 @@ const App = () => {
     setStripeApiKey(data.stripeApiKey);
   }
 
-
   useEffect(() => {
     Store.dispatch(loadUser());
     Store.dispatch(loadSeller());
@@ -59,6 +58,7 @@ const App = () => {
     Store.dispatch(getAllEvents());
     getStripeApiKey();
   }, []);
+
   if (userLoading || sellerLoading) {
     return <Loader />;
   }
@@ -66,6 +66,7 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* general routes */}
         <Route path='/' element={<HomePage />} />
         <Route path='/login' element={<LoginPage />} />
         <Route path='/sign-up' element={<SignupPage />} />
@@ -289,9 +290,6 @@ const App = () => {
       <ToastContainer position="top-center" autoClose={3000} />
     </BrowserRouter>
   )
-
-
-  // )  
 }
 
 export default App
